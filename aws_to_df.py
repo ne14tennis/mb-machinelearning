@@ -7,8 +7,12 @@ from newtools import AthenaClient, PandasDoggo, S3Location
 
 class AwsToDf:
 
-    def __init__(self, bucket_name=None):
-        self.bucket_name = bucket_name if not None else 'csmediabrain-mediabrain'
+    def __init__(self, bucket_name: Optional[str] = None):
+
+        self.bucket_name = 'csmediabrain-mediabrain'
+        if bucket_name is not None:
+            self.bucket_name = bucket_name
+
         self.bucket_location = 's3://' + self.bucket_name + '/'
         self.bucket = S3Location(self.bucket_location)
         self.doggo = PandasDoggo()

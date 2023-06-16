@@ -8,7 +8,6 @@ def run_program(name):
     atd = AwsToDf()
     df = atd.sql_to_df('test_sql')
     print(df.head())
-    print('We are in test 1')
 
 
 if __name__ == '__main__':
