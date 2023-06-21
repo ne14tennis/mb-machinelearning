@@ -1,2 +1,2 @@
 SELECT *
-FROM mediabrain.latest_batch_ids
+FROM mediabrain.ml_sample_1
