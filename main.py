@@ -16,13 +16,16 @@ def run_program(name):
 ## Extracting day and time per show for most occurences ----split, find, replace
     df['air_date_time']=df['air_date_time'].str.strip()
     df[['date','time']]=df['air_date_time'].str.split(' ', 1, expand=True)
-## coverting to datetime data type for date
+## coverting to datetime data type
     df['date']= pd.to_datetime(df['date'])
-
+    df['time']=pd.to_datetime(df['time'])
 ##extracting day from datetime
     df['day']=df['date'].dt.day_name()
     df=df.drop(['date'], axis=1)
-
+##rounding up time
+    df['time'] = df['time'].apply(lambda x: x.round('30min'))
+    df['time'] = df['time'].dt.strftime('%H:%M:%S')
+    df=df.drop(['air_date_time'], axis=1)
     print(df.head())
     #lst_exc_view=['programme_duration','market_name','network_id',
      #           'station_id','series_name','series_id','is_latest_season',
@@ -46,19 +49,20 @@ def run_program(name):
 #c=0, therefore merge on only series_id is fine
     df=pd.merge(df,series,on='series_id',how='left')
     df.head()
-#rounding-up time
-
-##Summation per season per series
+##Summation per household season per season per station per day per time-slot, etc
     ##checking same series, different epsiode_id
-    c1=df.groupby(['series_name','series_id','episode_id']).size().reset_index(name='count')
+    c1=df.groupby(['series_name','season','episode_id']).size().reset_index(name='count')
     ## multiple found, therefore summation on all other columns
-    ### dropping episode_id
-    new_df=df.drop(['episode_id'],axis=1)
-    new_df = new_df.groupby(['hh_id', 'day','time','market_name', 'network_id', 'station_id', 'series_name', 'series_id', 'is_latest_season', 'genre_name',
+    ### dropping
+    new_df=df.drop(['episode_id','series_id','view_date_time','utc_airing_date'], axis=1)
+
+    new_df = new_df.groupby(['hh_id', 'day','time','market_name', 'network_id', 'station_id', 'series_name', 'season', 'is_latest_season', 'genre_name',
      'genre_id', 'is_national', 'market_id']).agg({'view_duration': 'sum', 'programme_duration': 'sum'}).reset_index()
     print(new_df.head())
 
 ## checking for duplicate combinations in each household
+    duplicate_counts = new_df.duplicated(subset=['hh_id', 'series_name', 'season', 'network_id', 'station_id', 'day', 'time'], keep=False).groupby(new_df['hh_id']).sum()
+    total_duplicates = duplicate_counts.sum()
 
     ## checking observations where view_duration>programee_duration
     df2=df[df['programme_duration']<df['view_duration']]
@@ -75,10 +79,12 @@ def run_program(name):
     ### checking for combinations across series, network, station
     comb = df.groupby(['series_name', 'network_id', 'station_id']).size().reset_index(name='count')
     comb.head()
-    ## different comb exists----(list-series+network+station)
+    ## different comb exists----(list-series+season+network+station+day+time)
 
-
-
+    ## creating 'watched' column
+    new_df['ratio'] = new_df['view_duration'] / new_df['programme_duration']
+    new_df['watched'] = (new_df['ratio'] >= 0.4).astype(int)
+    new_df=new_df.drop(['ratio'], axis=1)
 
 
 if __name__ == '__main__':
