@@ -56,14 +56,15 @@ def run_program(name):
     ### dropping
     new_df=df.drop(['episode_id','series_id','view_date_time','utc_airing_date'], axis=1)
 
+    ## aggregating on is-national also(highest-freq/mode value as only 0.1% of observations very when grouped on given)
     new_df = new_df.groupby(['hh_id', 'day','time','market_name', 'network_id', 'station_id', 'series_name', 'season', 'is_latest_season', 'genre_name',
-     'genre_id', 'is_national', 'market_id']).agg({'view_duration': 'sum', 'programme_duration': 'sum'}).reset_index()
+     'genre_id', 'market_id']).agg({'view_duration': 'sum', 'programme_duration': 'sum', 'is_national':lambda x:x.value_counts().index[0]}).reset_index()
     print(new_df.head())
 
 ## checking for duplicate combinations in each household
     duplicate_counts = new_df.duplicated(subset=['hh_id', 'series_name', 'season', 'network_id', 'station_id', 'day', 'time'], keep=False).groupby(new_df['hh_id']).sum()
     total_duplicates = duplicate_counts.sum()
-
+    ## total_duplicates = 0, therefore we can proceed on these columns selection
     ## checking observations where view_duration>programee_duration
     df2=df[df['programme_duration']<df['view_duration']]
     ## as a percentage
@@ -85,6 +86,35 @@ def run_program(name):
     new_df['ratio'] = new_df['view_duration'] / new_df['programme_duration']
     new_df['watched'] = (new_df['ratio'] >= 0.4).astype(int)
     new_df=new_df.drop(['ratio'], axis=1)
+    print(new_df.head())
+    ## creating hh_id list
+    hh_lst= new_df['hh_id'].unique().tolist()
+    print(hh_lst)
+    ##creating combinations
+    combinations_df = new_df[['series_name', 'season', 'network_id', 'station_id', 'day',
+                          'time','is_latest_season', 'genre_name', 'genre_id', 'market_id','is_national']].drop_duplicates()
+
+    #finding missing coms per hh,setting 'watched'=0, appending (append-only rows) to new_rows, concating (concat-rows/columns) new_rows to new_df
+    new_rows = []
+    for hh_id in hh_lst:
+        hh_comb = combinations_df.copy()  # Creating a copy of the combinations DataFrame for each hh_id
+        existing_comb = new_df.loc[new_df['hh_id'] == hh_id, ['series_name', 'season', 'network_id', 'station_id', 'day', 'time']].drop_duplicates()
+        missing_comb = hh_comb.merge(existing_comb, on=['series_name', 'season', 'network_id', 'station_id', 'day', 'time'], how='left', indicator=True)
+        missing_comb = missing_comb[missing_combinations['_merge'] == 'left_only']
+        missing_comb['hh_id'] = hh_id
+        missing_comb['watched'] = 0
+        new_rows.append(missing_comb)
+
+    new_df = pd.concat([new_df] + new_rows, ignore_index=True)
+
+    print(new_df.head())
+    ## adding demographics
+
+
+
+
+
+
 
 
 if __name__ == '__main__':
