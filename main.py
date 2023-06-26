@@ -70,43 +70,36 @@ def run_program(name):
     ## as a percentage
     print("proportion="+ str(len(df2)/len(df)))
 
-
-    ### checking for combinations across series, network, station
-    comb = df.groupby(['series_name', 'network_id', 'station_id']).size().reset_index(name='count')
-    comb.head()
-    ## different comb exists----(list-series+season+network+station+day+time)
-
     ## creating 'watched' column
     new_df['ratio'] = new_df['view_duration'] / new_df['programme_duration']
     new_df['watched'] = (new_df['ratio'] >= 0.4).astype(int)
     new_df=new_df.drop(['ratio'], axis=1)
+    new_df.head()
 
     print(len(new_df))
-## creating hh_id list
+
+#adding 0/1 obs
+    ## creating hh_lst
     hh_lst = new_df['hh_id'].unique().tolist()
     print(hh_lst)
 
-## creating combinations
+# Creating combinations
     combinations_df = new_df[['series_name', 'season', 'network_id', 'station_id', 'day',
                           'time', 'is_latest_season', 'genre_name', 'genre_id', 'market_id', 'is_national']].drop_duplicates()
 
-# finding missing coms per hh, setting 'watched' = 0, appending (append-only rows) to new_rows, concatenating (concat-rows/columns) new_rows to new_df
-    new_rows = []
     for hh_id in hh_lst:
-        hh_comb = combinations_df.copy()  # Creating a copy of the combinations DataFrame for each hh_id
-        existing_comb = new_df.loc[new_df['hh_id'] == hh_id, ['series_name', 'season', 'network_id', 'station_id', 'day', 'time', 'is_latest_season', 'genre_name', 'genre_id', 'market_id', 'is_national']].drop_duplicates()
-        missing_comb = hh_comb.merge(existing_comb, on=['series_name', 'season', 'network_id', 'station_id', 'day', 'time', 'is_latest_season', 'genre_name', 'genre_id', 'market_id', 'is_national'], how='left', indicator=True)
-        missing_comb = missing_comb[missing_comb['_merge'] == 'left_only']
+        combinations_df['hh_id'] = hh_id
+        existing_comb = new_df[new_df['hh_id'] == hh_id]
+        missing_comb = pd.merge(combinations_df, existing_comb, on=['hh_id','series_name', 'season', 'network_id', 'station_id', 'day', 'time', 'is_latest_season', 'genre_name', 'genre_id', 'market_id', 'is_national'], how='left')
+        missing_comb = missing_comb[missing_comb['watched'].isnull()]
         missing_comb['hh_id'] = hh_id
         missing_comb['watched'] = 0
-        new_rows.append(missing_comb)
-
-    new_df = pd.concat([new_df] + new_rows, ignore_index=True)
+        new_df = pd.concat([new_df, missing_comb], ignore_index=True)
 
     print(len(new_df))
     print(len(hh_lst))
     print(len(combinations_df))
-    ## adding demographics
+## adding dem
 
 ##checking if different networks have same show
     df3=df.groupby('series_name')['network_id'].nunique()
