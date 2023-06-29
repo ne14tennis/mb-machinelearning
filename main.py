@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from aws_to_df import AwsToDf
-
+import time
 def run_program(name):
 ## Main df data
     atd = AwsToDf()
@@ -77,29 +77,90 @@ def run_program(name):
     new_df.head()
 
     print(len(new_df))
+#creating mart_id, market_name, hh_id
+    mrkt_hh=new_df[['hh_id','market_id','market_name']].copy()
+#dropping hh char
+    new_df=new_df.drop(['market_id','market_name','view_duration','programme_duration'], axis=1)
+    print(len(new_df))
+    new_df.head()
+
+#selecting random 18,000 unique households
+    nf_df = new_df.copy()
+    uniq_hh = new_df['hh_id'].unique()
+    np.random.shuffle(uniq_hh)
+    sel_ids = uniq_hh[:18000] # first 18k
+    new_df=new_df[new_df['hh_id'].isin(sel_ids)]
+    len(new_df)
+    new_df.head()
 
 #adding 0/1 obs
-    ## creating hh_lst
+    start_time = time.time()
+    print("sess_check")
+
+    ## Creating hh_lst
     hh_lst = new_df['hh_id'].unique().tolist()
     print(hh_lst)
 
-# Creating combinations
-    combinations_df = new_df[['series_name', 'season', 'network_id', 'station_id', 'day',
-                          'time', 'is_latest_season', 'genre_name', 'genre_id', 'market_id', 'is_national']].drop_duplicates()
+    ## Creating combinations_df with a temporary identifier
+    combinations_df = new_df[['day', 'time', 'network_id', 'station_id', 'series_name', 'season',
+                          'is_latest_season', 'genre_name', 'genre_id', 'is_national']].drop_duplicates()
+    combinations_df['temp_id'] = range(len(combinations_df))  # temporary identifier column
+    print(len(combinations_df))
+
+    section_start_time = time.time()
+
+    merged_df = pd.merge(new_df, combinations_df, on=['day', 'time', 'network_id', 'station_id',
+                                                  'series_name', 'season', 'is_latest_season',
+                                                  'genre_name', 'genre_id', 'is_national'], how='left')
 
     for hh_id in hh_lst:
-        combinations_df['hh_id'] = hh_id
-        existing_comb = new_df[new_df['hh_id'] == hh_id]
-        missing_comb = pd.merge(combinations_df, existing_comb, on=['hh_id','series_name', 'season', 'network_id', 'station_id', 'day', 'time', 'is_latest_season', 'genre_name', 'genre_id', 'market_id', 'is_national'], how='left')
-        missing_comb = missing_comb[missing_comb['watched'].isnull()]
-        missing_comb['hh_id'] = hh_id
-        missing_comb['watched'] = 0
+        iteration_start_time = time.time()
+
+    ## Creating a copy
+        temp_df = merged_df.copy()
+        temp_df = temp_df[temp_df['hh_id'] == hh_id]  # Filter by household ID
+
+    ## Getting the distinct list of temp_ids for that hh_id in temp_df
+        distinct_temp_ids = temp_df['temp_id'].unique()
+
+    ## Getting missing comb from combinations_df - comb of temp
+        missing_comb = combinations_df[~combinations_df['temp_id'].isin(distinct_temp_ids)]
+
+    ## Addding columns 'hh_id' and 'watched' to missing_comb
+        missing_comb.loc[:, 'hh_id'] = hh_id
+        missing_comb.loc[:, 'watched'] = 0
+
+     ## Ordering columns acc new_df
+        missing_comb = missing_comb[new_df.columns]
+
+    # Concatenateing
         new_df = pd.concat([new_df, missing_comb], ignore_index=True)
 
-    print(len(new_df))
-    print(len(hh_lst))
-    print(len(combinations_df))
+        print(f"Household ID: {hh_id}")
+        print(f"Number of Existing Combinations: {len(temp_df)}")
+        print(f"Number of Missing Combinations: {len(missing_comb)}")
+        print(f"Length of updated df: {len(new_df)}")
+        iteration_end_time = time.time()
+        iteration_elapsed_time = iteration_end_time - iteration_start_time
+        print(f"Iteration Elapsed Time: {iteration_elapsed_time} seconds")
+        print("---------------------------------")
+
+    section_end_time = time.time()
+    section_elapsed_time = section_end_time - section_start_time
+
+    print(f"Elapsed Time: {section_elapsed_time} seconds")
+    print(f"Total Number of Rows in new_df: {len(new_df)}")
+    print(f"Total Number of Household IDs: {len(hh_lst)}")
+    print(f"Total Number of Combinations: {len(combinations_df)}")
+
+    total_elapsed_time = time.time() - start_time
+    print(f"Total Elapsed Time: {total_elapsed_time} seconds")
+
 ## adding dem
+    #extracting segment_id per hhh, some hh have multiple seg_ids so join with space
+    #dem= df.groupby('hh_id')['segment_id'].apply(lambda x: ' '.join(map(str, x))).reset_index()
+    #counting the max spaces(segments per hh) to create that many columns
+    #
 
 ##checking if different networks have same show
     df3=df.groupby('series_name')['network_id'].nunique()
