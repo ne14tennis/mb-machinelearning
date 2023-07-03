@@ -13,6 +13,12 @@ def run_program(name):
     series = atd.sql_to_df('series_sql')
     pd.set_option('display.max_columns', None)
     print(series.head())
+## Demographics data df
+    atd = AwsToDf()
+    dem_df = atd.sql_to_df('dem_sql')
+    pd.set_option('display.max_columns', None)
+    print(dem_df.head())
+
 ## Extracting day and time per show for most occurences ----split, find, replace
     df['air_date_time']=df['air_date_time'].str.strip()
     df[['date','time']]=df['air_date_time'].str.split(' ', 1, expand=True)
