@@ -19,6 +19,10 @@ def run_program(name):
     pd.set_option('display.max_columns', None)
     print(dem_df.head())
 
+## Extracting dem_characteristics
+    #check done for multiple segment for same hh_id. Found results
+
+
 ## Extracting day and time per show for most occurences ----split, find, replace
     df['air_date_time']=df['air_date_time'].str.strip()
     df[['date','time']]=df['air_date_time'].str.split(' ', 1, expand=True)
