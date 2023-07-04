@@ -9,20 +9,20 @@ def run_program(name):
     pd.set_option('display.max_columns', None)
     print(df.head())
 ## Series data df
-    atd = AwsToDf()
+
     series = atd.sql_to_df('series_sql')
     pd.set_option('display.max_columns', None)
     print(series.head())
-## Demographics data df
-    atd = AwsToDf()
+## Demographics data df-1
+
     dem_df = atd.sql_to_df('dem_sql')
     pd.set_option('display.max_columns', None)
     print(dem_df.head())
+## Demographics data df-2
 
-## Extracting dem_characteristics
-    #check done for multiple segment for same hh_id. Found results
-
-
+    dem_nam = atd.sql_to_df('dem2_sql')
+    pd.set_option('display.max_columns', None)
+    print(dem_nam.head())
 ## Extracting day and time per show for most occurences ----split, find, replace
     df['air_date_time']=df['air_date_time'].str.strip()
     df[['date','time']]=df['air_date_time'].str.split(' ', 1, expand=True)
@@ -102,11 +102,43 @@ def run_program(name):
     new_df=new_df[new_df['hh_id'].isin(sel_ids)]
     len(new_df)
     new_df.head()
-
-# List of distinct 16k hh_ids chosen
+## List of distinct 16k hh_ids chosen
     hh_lst= new_df['hh_id'].unique()
+    hh_lst.head()
+## Extracting dem_characteristics for sample
+    dem_ref= hh_lst.merge(dem_df, on='hh_id', how='inner')
+    ## Renaming and merging (note- obs lost on inner cause removing for unimportant segments----new_df should be filtered)
+    dem_nam = dem_nam.rename(columns = {"id":"segment_id"})
+    fin_dem = dem_nam.merge(dem_ref, on ='segment_id', how ='inner')
+    ## To facilitate understanding
+    fin_dem = fin_dem.groupby(['hh_id','segment_id','name'])
+    fin_dem = fin_dem.first().reset_index()
 
-#adding 0/1 obs
+    ## Creating dummies for segment_id
+    dem_dum = pd.get_dummies(fin_dem.segment_id)
+
+    ## Concatinating dummies to fin_dem['hh_id']
+    segment_df = pd.concat([fin_dem['hh_id'], dem_dum], axis=1)
+    ## Compressing dummies to hh_id level by summing
+    segment_df = segment_df.groupby('hh_id').sum()
+    segment_df = segment_df.reset_index()
+
+    print(segment_df.head())
+## Household and market_name
+    #Filtering hh_id in mrkt_hh
+    hh_lst = segment_df['hh_id'].unique()
+    hh_df = pd.DataFrame(hh_lst, columns=['hh_id'])
+    mrkt_hh = hh_df.merge(mrkt_hh, on= 'hh_id', how= 'inner').drop_duplicates()
+
+    #Checking if any hh_id has more than 1 market_id
+    multi_mrkt = (mrkt_hh.groupby('hh_id')['market_id'].size() > 1).any()
+    #As False, dummy tranformation is left to later
+
+#Filtering new_df acc hh_id in segment_df
+    new_df = new_df[new_df['hh_id'].isin(hh_lst)]
+    print(len(new_df))
+
+#Adding 0/1 obs
     start_time = time.time()
 
     # Selecting first and last unique show observations and adding identifier column
