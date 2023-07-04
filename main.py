@@ -201,6 +201,7 @@ def run_program(name):
     print(f"Total Number of Rows in new_df: {len(new_df)}")
     print(f"Total Number of Household IDs: {len(hh_lst)}")
     print(f"Total Number of Combinations: {len(comb_df)}")
+    print('N')
 
 ## adding dem
     #extracting segment_id per hhh, some hh have multiple seg_ids so join with space
