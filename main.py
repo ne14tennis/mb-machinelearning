@@ -141,7 +141,7 @@ def run_program(name):
 
     # Extracting sample
     all_combs = c_df.drop_duplicates()
-    s_all_combs = all_combs.sample(n=3000, random_state=777)
+    s_all_combs = all_combs.sample(n=2800, random_state=777)
 
     # Concatenating and dropping duplicates
     comb_df = pd.concat([comb_df, s_all_combs])
@@ -185,7 +185,7 @@ def run_program(name):
         print(f"Iteration Elapsed Time: {iteration_elapsed_time} seconds")
         print("---------------------------------")
 
-        if hh_id == hh_df[int(len(hh_lst) * 3/4)]:
+        if hh_id == hh_lst[int(len(hh_lst) * 3/4)]:
             doggo = PandasDoggo()
             path = "s3://csmediabrain-mediabrain/prod_mb/data_source/machine_learning_data/ML_df1.csv"
             doggo.save(new_df, path)
@@ -206,9 +206,7 @@ def run_program(name):
     df3.head()
     ## there are shows which are screened by multiple networks (list-netwotk_id+series)
     ## are they different shows or the same show screened by multiple networks?
-    df3 = df.groupby('series_name')['network_id'].unique()
 
-    df3.head()
 
 
 
