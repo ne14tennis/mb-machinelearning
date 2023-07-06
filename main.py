@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 from aws_to_df import AwsToDf
+from newtools import PandasDoggo
 import time
 def run_program(name):
 ## Main df data
@@ -26,43 +27,30 @@ def run_program(name):
 ## Extracting day and time per show for most occurences ----split, find, replace
     df['air_date_time']=df['air_date_time'].str.strip()
     df[['date','time']]=df['air_date_time'].str.split(' ', 1, expand=True)
-## coverting to datetime data type
+    ## coverting to datetime data type
     df['date']= pd.to_datetime(df['date'])
     df['time']=pd.to_datetime(df['time'])
-##extracting day from datetime
+    ##extracting day from datetime
     df['day']=df['date'].dt.day_name()
     df=df.drop(['date'], axis=1)
-##rounding up time
+    ##rounding up time
     df['time'] = df['time'].apply(lambda x: x.round('30min'))
     df['time'] = df['time'].dt.strftime('%H:%M:%S')
     df=df.drop(['air_date_time'], axis=1)
     print(df.head())
-    #lst_exc_view=['programme_duration','market_name','network_id',
-     #           'station_id','series_name','series_id','is_latest_season',
-      #          'genre_name','genre_id','is_national','market_id']
-
-    ## creating df_series_1/2 by grouping for series-day/time,----------under_review
-    ##   proportion of day per group, if proportion>80% we aggregate
-    ## lst_day=[programme_duration','market_name','network_id','station_id','series_name','series_id','is_latest_season',
-       ##      'day','genre_name','genre_id','is_national','market_id']
-    ## df_series_1= df.groupby(lst_exc_view).size().reset_index(name='count')
-    ## df_series_1.head()
-
-    #creating season
+## Creating season
     series['season']=series.groupby('name')['series_no'].rank()
     series=series.rename(columns={'name':'series_name', 'series_no':'series_id'})
 
-#checking that shows have exclusive series_id
+    #checking that shows have exclusive series_id
     c=series.groupby('series_name')['series_id'].apply(lambda x: x.duplicated().any().sum()).sum()
     series=series.drop(['series_name'], axis=1)
     print(c)
-#c=0, therefore merge on only series_id is fine
+    #c=0, therefore merge on only series_id is fine
     df=pd.merge(df,series,on='series_id',how='left')
     df.head()
 ##Summation per household season per season per station per day per time-slot, etc
-    ##checking same series, different epsiode_id
-    c1=df.groupby(['series_name','season','episode_id']).size().reset_index(name='count')
-    ## multiple found, therefore summation on all other columns
+
     ### dropping
     new_df=df.drop(['episode_id','series_id','view_date_time','utc_airing_date'], axis=1)
 
@@ -90,7 +78,7 @@ def run_program(name):
 #creating mart_id, market_name, hh_id
     mrkt_hh=new_df[['hh_id','market_id','market_name']].copy()
 #dropping hh char
-    new_df=new_df.drop(['market_id','market_name','view_duration','programme_duration'], axis=1)
+    new_df=new_df.drop(['market_id','market_name','view_duration','programme_duration','genre_id'], axis=1)
     print(len(new_df))
     new_df.head()
 
@@ -104,9 +92,10 @@ def run_program(name):
     new_df.head()
 ## List of distinct 16k hh_ids chosen
     hh_lst= new_df['hh_id'].unique()
-    hh_lst.head()
+    print(len(hh_lst))
 ## Extracting dem_characteristics for sample
-    dem_ref= hh_lst.merge(dem_df, on='hh_id', how='inner')
+    hh_df = pd.DataFrame(hh_lst, columns=['hh_id'])
+    dem_ref= hh_df.merge(dem_df, on='hh_id', how='inner')
     ## Renaming and merging (note- obs lost on inner cause removing for unimportant segments----new_df should be filtered)
     dem_nam = dem_nam.rename(columns = {"id":"segment_id"})
     fin_dem = dem_nam.merge(dem_ref, on ='segment_id', how ='inner')
@@ -152,7 +141,7 @@ def run_program(name):
 
     # Extracting sample
     all_combs = c_df.drop_duplicates()
-    s_all_combs = all_combs.sample(n=3500, random_state=777)
+    s_all_combs = all_combs.sample(n=3000, random_state=777)
 
     # Concatenating and dropping duplicates
     comb_df = pd.concat([comb_df, s_all_combs])
@@ -163,7 +152,7 @@ def run_program(name):
 
     merged_df = pd.merge(new_df, comb_df, on=['day', 'time', 'network_id', 'station_id',
                                                   'series_name', 'season', 'is_latest_season',
-                                                  'genre_name', 'genre_id', 'is_national'], how='left')
+                                                  'genre_name',  'is_national'], how='left')
     merged_df.head()
     for hh_id in hh_lst:
         iteration_start_time = time.time()
@@ -196,18 +185,21 @@ def run_program(name):
         print(f"Iteration Elapsed Time: {iteration_elapsed_time} seconds")
         print("---------------------------------")
 
+        if hh_id == hh_df[int(len(hh_lst) * 3/4)]:
+            doggo = PandasDoggo()
+            path = "s3://csmediabrain-mediabrain/prod_mb/data_source/machine_learning_data/ML_df1.csv"
+            doggo.save(new_df, path)
+
     total_elapsed_time = time.time() - start_time
     print(f"Total Elapsed Time: {total_elapsed_time} seconds")
     print(f"Total Number of Rows in new_df: {len(new_df)}")
     print(f"Total Number of Household IDs: {len(hh_lst)}")
     print(f"Total Number of Combinations: {len(comb_df)}")
     print('N')
-
-## adding dem
-    #extracting segment_id per hhh, some hh have multiple seg_ids so join with space
-    #dem= df.groupby('hh_id')['segment_id'].apply(lambda x: ' '.join(map(str, x))).reset_index()
-    #counting the max spaces(segments per hh) to create that many columns
-    #
+## saving new_df on s3
+    doggo = PandasDoggo()
+    path="s3://csmediabrain-mediabrain/prod_mb/data_source/machine_learning_data/ML_df2.csv"
+    doggo.save(new_df, path)
 
 ##checking if different networks have same show
     df3=df.groupby('series_name')['network_id'].nunique()
