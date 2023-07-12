@@ -371,15 +371,27 @@ def run_program(name):
 ## saving new_df on s3
     path="s3://csmediabrain-mediabrain/prod_mb/data_source/machine_learning_data/ML_df3.csv"
     doggo.save(new_df, path)
-
-##checking if different networks have same show
-    df3=df.groupby('series_name')['network_id'].nunique()
-    df3.head()
+    print('Saved df')
     # Merge
     n_df = new_df.merge(segment_df, on = "hh_id", how = 'left')
     n_df = n_df.merge(mrkt_hh, on = 'hh_id', how = 'left')
     n_df = n_df.drop(['market_name','series_name'], axis = 1)
+    print(len(n_df))
+    path = "s3://csmediabrain-mediabrain/prod_mb/data_source/machine_learning_data/Pd_df.csv"
+    doggo.save(n_df, path)
+    # Checking for NaN values
+    n_df.isna().sum()
 
+    # Getting dummies -----OHE
+    day_dummy = pd.get_dummies(n_df.day)
+    hh_dummy = pd.get_dummies(n_df.hh_id)
+    network_dummy = pd.get_dummies(n_df.network_id)
+    station_dummy = pd.get_dummies(n_df.station_id)
+    season_dummy = pd.get_dummies(n_df.season)
+    genre_dummy = pd.get_dummies(n_df.genre_id)
+    mrkt_dummy = pd.get_dummies(n_df.market_id)
+
+    print('Dummies created')
 
 
 
