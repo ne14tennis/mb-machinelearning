@@ -1,19 +1,26 @@
+# Basic
 import numpy as np
 import pandas as pd
 # Loading, converting, saving libraries
 from aws_to_df import AwsToDf
 from newtools import PandasDoggo
-import time
-#Libraries for Plots/Data Visualisatino
+
+# Libraries for Plots/Data Visualisations
 import matplotlib.pyplot as plt
-#import seaborn as sns
-#modelling
+import seaborn as sns
+
+# Libraries Modelling
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import SGDClassifier
+from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import GradientBoostingClassifier
+
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import f1_score
 from sklearn.metrics import confusion_matrix
+from sklearn.metrics import precision_score, recall_score
+from sklearn.inspection import permutation_importance
 
 def run_program(name):
     # Loading refined dataframes
@@ -68,6 +75,11 @@ def run_program(name):
     # Split data into training and testing sets
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=77)
     X_train.head()
+# Modelling
+
+    # Logistic Regression
+
+    # SVM
 
     #SGD Classifier
     sgd_clf = SGDClassifier(random_state=42)
@@ -76,8 +88,25 @@ def run_program(name):
     accuracy = accuracy_score(y_test, y_pred)
     print("Accuracy:", accuracy)
     f1 = f1_score(y_test, y_pred)
+    precision = precision_score(y_test, y_pred)
+    recall = recall_score(y_test, y_pred)
+    print("Precision:", precision)
+    print("Recall:", recall)
     print("F1 Score:", f1)
-    #RF Classifier
+    # Decision Tree Classifier
+
+    dt = DecisionTreeClassifier(random_state=42)
+    dt.fit(X_train, y_train)
+    y_pred = dt.predict(X_test)
+    accuracy = accuracy_score(y_test, y_pred)
+    print("Accuracy:", accuracy)
+    f1 = f1_score(y_test, y_pred)
+    precision = precision_score(y_test, y_pred)
+    recall = recall_score(y_test, y_pred)
+    print("Precision:", precision)
+    print("Recall:", recall)
+    print("F1 Score:", f1)
+    # RF Classifier
 
     rf = RandomForestClassifier(n_estimators=100, random_state=42)
     rf.fit(X_train, y_train)
@@ -85,14 +114,31 @@ def run_program(name):
     accuracy = accuracy_score(y_test, y_pred)
     print("Accuracy:", accuracy)
     f1 = f1_score(y_test, y_pred)
+    precision = precision_score(y_test, y_pred)
+    recall = recall_score(y_test, y_pred)
+    print("Precision:", precision)
+    print("Recall:", recall)
     print("F1 Score:", f1)
 
+    # Random Forest (SMOTHE)
 
 
+   # Gradient Boosting Classifier
+
+    gbc = GradientBoostingClassifier(random_state=42)
+    gbc.fit(X_train, y_train)
+    y_pred = gbc.predict(X_test)
+    accuracy = accuracy_score(y_test, y_pred)
+    print("Accuracy:", accuracy)
+    f1 = f1_score(y_test, y_pred)
+    precision = precision_score(y_test, y_pred)
+    recall = recall_score(y_test, y_pred)
+    print("Precision:", precision)
+    print("Recall:", recall)
+    print("F1 score:", f1)
 
 
-
-
+    # XG Boost
 
 if __name__ == '__main__':
     run_program('PyCharm')
