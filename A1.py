@@ -278,7 +278,7 @@ class a1:
         hh_lst = sorted(hh_lst)
         start_time = time.time()
 
-        # Selecting first and last unique show observations and adding identifier column
+        # Selecting unique show observations and adding identifier column
         c_df = new_df.drop(['hh_id', 'watched'], axis=1)
         c1 = c_df.groupby('series_name').first().reset_index()
 
