@@ -1,33 +1,30 @@
 # Basic
 import numpy as np
 import pandas as pd
+
 # Loading, converting, saving libraries
 from aws_to_df import AwsToDf
 from newtools import PandasDoggo
+
 # Scaling
 from sklearn.preprocessing import MinMaxScaler
+
 # Libraries for Plots/Data Visualisations
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-# Libraries Modelling
+# Libraries for Modelling
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report
 from sklearn.linear_model import LogisticRegression
-from sklearn import svm
-from sklearn.svm import SVC
-from sklearn.neighbors import KNeighborsClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.ensemble import GradientBoostingClassifier
 import xgboost as xgb
 
 #MLP
-from sklearn.neural_network import MLPClassifier
 import tensorflow as tf
-from keras.models import Sequential
-from keras.layers import Dense
-from keras.layers import Dense, Dropout, Input, Concatenate
+
 
 #Performance Metrics
 from sklearn.metrics import accuracy_score
@@ -36,11 +33,13 @@ from sklearn.metrics import confusion_matrix
 from sklearn.metrics import precision_score, recall_score
 from sklearn.inspection import permutation_importance
 
-# Learning Curve
-from sklearn.model_selection import learning_curve
 
-# Cross-val
+# Detection of Fit
+from sklearn.model_selection import learning_curve
 from sklearn.model_selection import cross_val_score
+
+# Feature Selection
+from sklearn.inspection import permutation_importance
 
 
 def run_program(name):
@@ -72,15 +71,11 @@ def run_program(name):
 
     print(n_df.head())
 
-
 # Scaling hour of day
     scaler = MinMaxScaler()
     hod_scaled = scaler.fit_transform(n_df['hour_of_day'].values.reshape(-1, 1))
     n_df['hour_of_day_scaled'] = hod_scaled
     print(n_df.head())
-
-# Checking for unique categories
-
 
 # Dummy Dataframe
     # Getting dummies -----OHE
@@ -105,11 +100,12 @@ def run_program(name):
 
     n_df.head()
 
+# Converting bool into 0/1 for MLP processing
+    n_df['is_latest_season'] = n_df['is_latest_season'].astype(int)
+    n_df['is_national'] = n_df['is_national'].astype(int)
 
-    print("Saved t_df")
-# Splitting into train and test
-
-    # For Models requiring scaling
+    print(n_df.head)
+    # Splitting into train and test---For Models requiring scaling
     # Split data into X (features) and y (target variable)
     X = n_df.drop(['watched','hour_of_day'], axis=1)
     y = n_df['watched']
@@ -121,7 +117,7 @@ def run_program(name):
 # Modelling
 
     # Logistic Regression
-    """
+
     log = LogisticRegression(random_state=77, max_iter=1000)
 
     log.fit(X_train, y_train)
@@ -138,26 +134,10 @@ def run_program(name):
     print("Precision:", precision)
     print("Recall:", recall)
     print("F1 Score:", f1)
-    """
-
-    # SVM
-    """
-    svm = SVC(kernel='rbf', random_state=1)
-    svm.fit(X_train, y_train)
-    svm_y_pred = svm.predict(X_test)
-    print(classification_report(y_test, svm_y_pred))
-    accuracy = accuracy_score(y_test, svm_y_pred)
-    print("Accuracy:", accuracy)
-    f1 = f1_score(y_test, svm_y_pred)
-    precision = precision_score(y_test, svm_y_pred)
-    recall = recall_score(y_test, svm_y_pred)
-    print("Precision:", precision)
-    print("Recall:", recall)
-    print("F1 Score:", f1)
-    """
 
     # For Models not requiring scaling
-    # Split data into X (features) and y (target variable)
+
+    # Splitting data into X (features) and y (target variable)
     X = n_df.drop(['watched','hour_of_day_scaled'], axis=1)
     y = n_df['watched']
     X.columns = X.columns.astype(str)
@@ -165,20 +145,10 @@ def run_program(name):
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=77, stratify=y)
     X_train.head()
 
-    """
-    # KNN Classifier
-    knn = KNeighborsClassifier(n_neighbors=5, metric='euclidean')
-    knn.fit(X_train, y_train)
-    y_pred = knn.predict(X_test)
-    accuracy = accuracy_score(y_test, y_pred)
-    print("Accuracy:", accuracy)
-    f1 = f1_score(y_test, y_pred)
-    precision = precision_score(y_test, y_pred)
-    recall = recall_score(y_test, y_pred)
-    print("Precision:", precision)
-    print("Recall:", recall)
-    print("F1 Score:", f1)
-    """
+    # Splitting data into train and val
+    X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.2, random_state=42, stratify=y_train)
+
+    # KNN Classifier --- eliminated due to requirement of excess memory
 
     # Decision Tree Classifier
 
@@ -245,11 +215,49 @@ def run_program(name):
 
     print("size check")
 
-    """
-    
-    k=5
-    
-    train_scores = cross_val_score(rf, X_train, y_train, cv=k)
+    # MLP
+    tf.random.set_seed(42)
+
+    # Model architecture
+    model = tf.keras.Sequential([
+        tf.keras.layers.Dense(64, activation='relu', input_shape=(X_train.shape[1],)),
+        tf.keras.layers.Dense(32, activation='relu'),
+        tf.keras.layers.Dense(1, activation='sigmoid')  # Sigmoid activation for binary classification
+    ])
+
+    # Defining the optimizer with a learning rate of 0.01
+    optimizer = tf.keras.optimizers.SGD(learning_rate=0.01)
+
+    # Compiling the model with binary cross-entropy loss and Binary_Accuracy as the metric
+    model.compile(loss='binary_crossentropy', optimizer=optimizer,
+                  metrics=[tf.keras.metrics.BinaryAccuracy(), tf.keras.metrics.Precision(),
+                           tf.keras.metrics.Recall()])
+
+    # Train the model
+    history = model.fit(X_train, y_train, epochs=50, batch_size=36, validation_data=(X_val, y_val), verbose=2)
+
+    # Evaluate the model on the test set
+    loss, binary_accuracy, precision, recall = model.evaluate(X_test, y_test)
+    print("Binary Cross-Entropy Loss:", loss)
+    print("Binary Accuracy on test set:", binary_accuracy)
+    print("Precision on test set:", precision)
+    print("Recall on test set:", recall)
+
+    # Make predictions on the test set
+    binary_preds = model.predict(X_test)
+    # Round the predictions to get the binary class labels (0 or 1)
+    binary_preds_rounded = [1 if pred > 0.5 else 0 for pred in binary_preds]
+
+    # Calculate F1-score for binary classification
+    f1 = f1_score(y_test, binary_preds_rounded)
+    print("F1-score: {:.2f}".format(f1))
+    print("F1-score: {:.2f}".format(f1))
+    # Detection of Fit
+    # Cross Validation Scores
+
+    k = 5
+
+    train_scores = cross_val_score(model, X_train, y_train, cv=k)
     plt.figure(figsize=(8, 6))
     plt.plot(range(1, k + 1), train_scores, label='Cross-Validated Training Score', marker='o')
     plt.axhline(np.mean(train_scores), color='red', linestyle='--', label='Average Training Score')
@@ -260,26 +268,19 @@ def run_program(name):
     plt.grid()
     plt.show()
 
-    # MLP
-    
-    
-   
-    """
+  # Learning Curve
 
-    print(len(X_train))
+    train_sizes, train_scores, val_scores = learning_curve(model, X, y, cv=5, train_sizes=np.linspace(0.1, 1.0, 5),
+                                                        scoring='accuracy')
 
-    # Learning Curve
+ # Calculate the mean and standard deviation for training and validation scores
 
-    train_sizes, train_scores, val_scores = learning_curve(rf, X, y, cv=5, train_sizes=np.linspace(0.1, 1.0, 5),
-                                                           scoring='accuracy')
-
-    # Calculate the mean and standard deviation for training and validation scores
     train_mean = np.mean(train_scores, axis=1)
     train_std = np.std(train_scores, axis=1)
     val_mean = np.mean(val_scores, axis=1)
     val_std = np.std(val_scores, axis=1)
 
-    # Plot the learning curves
+ # Plot the learning curves
     plt.figure(figsize=(10, 6))
     plt.plot(train_sizes, train_mean, label='Training Accuracy', color='blue')
     plt.fill_between(train_sizes, train_mean - train_std, train_mean + train_std, alpha=0.1, color='blue')
@@ -293,10 +294,14 @@ def run_program(name):
     plt.show()
 
     print(len(X_test))
+ # Saving Learning Curve
+    doggo = PandasDoggo()
+    im_path = "s3://csmediabrain-mediabrain/prod_mb/data_source/machine_learning_data/lc.png"
+    doggo.save(plt, im_path, file_format='png')
 
     print(len(X_train))
 
-
+    print(len(y_pred))
 if __name__ == '__main__':
-    run_program('PyCharm')
+ run_program('PyCharm')
 
