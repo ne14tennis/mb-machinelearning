@@ -28,7 +28,7 @@ import tensorflow as tf
 
 #Performance Metrics
 from sklearn.metrics import accuracy_score
-from sklearn.metrics import f1_score
+from sklearn.metrics import make_scorer, f1_score
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import precision_score, recall_score
 from sklearn.inspection import permutation_importance
@@ -40,8 +40,8 @@ from sklearn.model_selection import cross_val_score
 
 # Feature Selection
 from sklearn.inspection import permutation_importance
-
-
+from sklearn.utils import check_array
+from functools import partial
 def run_program(name):
     # Loading refined dataframes
     atd = AwsToDf()
@@ -115,6 +115,7 @@ def run_program(name):
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=77, stratify = y )
     X_train.head()
 # Modelling
+    """
 
     # Logistic Regression
 
@@ -134,9 +135,9 @@ def run_program(name):
     print("Precision:", precision)
     print("Recall:", recall)
     print("F1 Score:", f1)
-
+    """
     # For Models not requiring scaling
-
+    del new_df
     # Splitting data into X (features) and y (target variable)
     X = n_df.drop(['watched','hour_of_day_scaled'], axis=1)
     y = n_df['watched']
@@ -163,6 +164,7 @@ def run_program(name):
     print("Precision:", precision)
     print("Recall:", recall)
     print("F1 Score:", f1)
+    """    
     # RF Classifier
 
     rf = RandomForestClassifier(n_estimators= 100, random_state=42)
@@ -179,7 +181,7 @@ def run_program(name):
 
 
    # Gradient Boosting Classifier (GBC)
-    """
+    
 
     gbc = GradientBoostingClassifier(random_state=42)
     gbc.fit(X_train, y_train)
@@ -222,7 +224,7 @@ def run_program(name):
     model = tf.keras.Sequential([
         tf.keras.layers.Dense(64, activation='relu', input_shape=(X_train.shape[1],)),
         tf.keras.layers.Dense(32, activation='relu'),
-        tf.keras.layers.Dense(1, activation='sigmoid')  # Sigmoid activation for binary classification
+        tf.keras.layers.Dense(1, activation='sigmoid')  # Sigmoid activation fn
     ])
 
     # Defining the optimizer with a learning rate of 0.01
@@ -254,7 +256,7 @@ def run_program(name):
     print("F1-score: {:.2f}".format(f1))
     # Detection of Fit
     # Cross Validation Scores
-
+    """
     k = 5
 
     train_scores = cross_val_score(model, X_train, y_train, cv=k)
@@ -300,6 +302,48 @@ def run_program(name):
     doggo.save(plt, im_path, file_format='png')
 
     print(len(X_train))
+    """
+
+    def custom_f1_scorer_wrapper(y_test):
+        def custom_f1_scorer(estimator, X, y):
+            binary_preds = estimator.predict(X)
+            # Ensure binary_preds is in the correct format (binary)
+            binary_preds = check_array(binary_preds, ensure_2d=False)
+            binary_preds = (binary_preds > 0.5).astype(np.int64)
+
+            # Calculate F1 score
+            f1 = f1_score(y_test, binary_preds)
+            return f1
+
+        return custom_f1_scorer
+
+    # Create the custom F1 scorer with y_test fixed using closure
+    custom_f1_scorer_fixed = custom_f1_scorer_wrapper(y_test)
+
+    # Permutation_importance
+    result_test = permutation_importance(model, X_test, y_test,
+                                         n_repeats=30, random_state=0,
+                                         scoring=custom_f1_scorer_fixed)
+
+    print("Pemutation imp")
+
+    sorted_importances_idx = result_test.importances_mean.argsort()
+    importances_test = pd.DataFrame(
+        result_test.importances[sorted_importances_idx].T,
+        columns=X.columns[sorted_importances_idx],
+    )
+
+    f, axs = plt.subplots(1, 2, figsize=(15, 5))
+
+    importances_test.plot.box(vert=False, whis=10, ax=axs[0])
+    axs[0].set_title("Permutation Importances (test set)")
+    axs[0].axvline(x=0, color="k", linestyle="--")
+    axs[0].set_xlabel("Decrease in accuracy score")
+    axs[0].figure.tight_layout()
+
+    print("Perm Done")
+
+
 
     print(len(y_pred))
 if __name__ == '__main__':
