@@ -325,7 +325,7 @@ def run_program(name):
                                          n_repeats=30, random_state=0,
                                          scoring=custom_f1_scorer_fixed)
 
-    print("Pemutation imp")
+    print("Pemutation importance done")
 
     sorted_importances_idx = result_test.importances_mean.argsort()
     importances_test = pd.DataFrame(
