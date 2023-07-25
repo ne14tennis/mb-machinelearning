@@ -11,7 +11,7 @@ from sklearn.preprocessing import MinMaxScaler
 
 # Libraries for Plots/Data Visualisations
 import matplotlib.pyplot as plt
-import seaborn as sns
+
 
 # Libraries for Modelling
 from sklearn.model_selection import train_test_split
@@ -31,17 +31,9 @@ from sklearn.metrics import accuracy_score
 from sklearn.metrics import make_scorer, f1_score
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import precision_score, recall_score
-from sklearn.inspection import permutation_importance
 
-# Detection of Fit
-from sklearn.model_selection import learning_curve
-from sklearn.model_selection import cross_val_score
 
 # Feature Selection
-from sklearn.inspection import permutation_importance
-from sklearn.utils import check_array
-from functools import partial
-
 from sklearn.feature_selection import SelectKBest, chi2
 
 def run_program(name):
@@ -117,7 +109,7 @@ def run_program(name):
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=77, stratify = y )
     X_train.head()
 # Modelling
-    """
+
 
     # Logistic Regression
 
@@ -134,7 +126,7 @@ def run_program(name):
     print("Precision:", precision)
     print("Recall:", recall)
     print("F1 Score:", f1)
-    """
+
     # For Models not requiring scaling
     del new_df
     # Splitting data into X (features) and y (target variable)
@@ -151,7 +143,7 @@ def run_program(name):
 
     print("Train/val split complete")
     # KNN Classifier --- eliminated due to requirement of excess memory
-    """
+
     # Decision Tree Classifier
 
     dt = DecisionTreeClassifier(random_state=42)
@@ -208,7 +200,7 @@ def run_program(name):
     print("Precision:", precision)
     print("F1 score:", f1)
     print("Recall:", recall)
-    """
+
     print("Shape of X:", X.shape)
     print("Shape of y:", y.shape)
 
