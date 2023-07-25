@@ -24,7 +24,7 @@ import xgboost as xgb
 
 #MLP
 import tensorflow as tf
-
+from sklearn.neural_network import MLPClassifier
 
 #Performance Metrics
 from sklearn.metrics import accuracy_score
@@ -32,7 +32,6 @@ from sklearn.metrics import make_scorer, f1_score
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import precision_score, recall_score
 from sklearn.inspection import permutation_importance
-
 
 # Detection of Fit
 from sklearn.model_selection import learning_curve
@@ -42,6 +41,9 @@ from sklearn.model_selection import cross_val_score
 from sklearn.inspection import permutation_importance
 from sklearn.utils import check_array
 from functools import partial
+
+from sklearn.feature_selection import SelectKBest, chi2
+
 def run_program(name):
     # Loading refined dataframes
     atd = AwsToDf()
@@ -122,11 +124,8 @@ def run_program(name):
     log = LogisticRegression(random_state=77, max_iter=1000)
 
     log.fit(X_train, y_train)
-
-    # Predict the response for test dataset
-
     log_y_pred = log.predict(X_test)
-    print(classification_report(y_test, log_y_pred))
+    
     accuracy = accuracy_score(y_test, log_y_pred)
     print("Accuracy:", accuracy)
     f1 = f1_score(y_test, log_y_pred)
@@ -145,12 +144,14 @@ def run_program(name):
     # Split data into training and testing sets
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=77, stratify=y)
     X_train.head()
-
+    # Deleting un-necessary variables
+    del day_dummy, genre_dummy, hh_dummy, mrkt_dummy, mrkt_hh, network_dummy, season_dummy, segment_df, station_dummy
     # Splitting data into train and val
     X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.2, random_state=42, stratify=y_train)
 
+    print("Train/val split complete")
     # KNN Classifier --- eliminated due to requirement of excess memory
-
+    """
     # Decision Tree Classifier
 
     dt = DecisionTreeClassifier(random_state=42)
@@ -164,7 +165,7 @@ def run_program(name):
     print("Precision:", precision)
     print("Recall:", recall)
     print("F1 Score:", f1)
-    """    
+
     # RF Classifier
 
     rf = RandomForestClassifier(n_estimators= 100, random_state=42)
@@ -181,7 +182,6 @@ def run_program(name):
 
 
    # Gradient Boosting Classifier (GBC)
-    
 
     gbc = GradientBoostingClassifier(random_state=42)
     gbc.fit(X_train, y_train)
@@ -194,7 +194,6 @@ def run_program(name):
     print("Precision:", precision)
     print("Recall:", recall)
     print("F1 score:", f1)
-
 
     # XG Boost
 
@@ -209,15 +208,14 @@ def run_program(name):
     print("Precision:", precision)
     print("F1 score:", f1)
     print("Recall:", recall)
-
     """
-
     print("Shape of X:", X.shape)
     print("Shape of y:", y.shape)
 
     print("size check")
 
     # MLP
+    # Set random seed
     tf.random.set_seed(42)
 
     # Model architecture
@@ -254,98 +252,94 @@ def run_program(name):
     f1 = f1_score(y_test, binary_preds_rounded)
     print("F1-score: {:.2f}".format(f1))
     print("F1-score: {:.2f}".format(f1))
-    # Detection of Fit
-    # Cross Validation Scores
-    """
-    k = 5
+# Detection of model fit given the set hyperparameters
 
-    train_scores = cross_val_score(model, X_train, y_train, cv=k)
-    plt.figure(figsize=(8, 6))
-    plt.plot(range(1, k + 1), train_scores, label='Cross-Validated Training Score', marker='o')
-    plt.axhline(np.mean(train_scores), color='red', linestyle='--', label='Average Training Score')
-    plt.xlabel('Fold')
-    plt.ylabel('Score')
-    plt.title('Cross-Validated Training Score vs. Fold')
+    # Plot the loss curve for training and validation
+    plt.plot(history.history['loss'], label='Training Loss')
+    plt.plot(history.history['val_loss'], label='Validation Loss')
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
     plt.legend()
-    plt.grid()
+    plt.title('Training and Validation Loss')
     plt.show()
 
-  # Learning Curve
+    print("Overfit Detected")
 
-    train_sizes, train_scores, val_scores = learning_curve(model, X, y, cv=5, train_sizes=np.linspace(0.1, 1.0, 5),
-                                                        scoring='accuracy')
+# Univariate Feature Selection
+    # Results checked with k=150,200,300,500,800. Best when k=300, hence chosen
 
- # Calculate the mean and standard deviation for training and validation scores
+    k = 300
+    selector = SelectKBest(chi2, k=k)
+    X_train_selected = selector.fit_transform(X_train, y_train)
+    X_val_selected = selector.transform(X_val)
+    X_test_selected = selector.transform(X_test)
 
-    train_mean = np.mean(train_scores, axis=1)
-    train_std = np.std(train_scores, axis=1)
-    val_mean = np.mean(val_scores, axis=1)
-    val_std = np.std(val_scores, axis=1)
+    print("Univariate FS")
+    # MLP
+    tf.random.set_seed(42)
 
- # Plot the learning curves
-    plt.figure(figsize=(10, 6))
-    plt.plot(train_sizes, train_mean, label='Training Accuracy', color='blue')
-    plt.fill_between(train_sizes, train_mean - train_std, train_mean + train_std, alpha=0.1, color='blue')
-    plt.plot(train_sizes, val_mean, label='Validation Accuracy', color='red')
-    plt.fill_between(train_sizes, val_mean - val_std, val_mean + val_std, alpha=0.1, color='red')
-    plt.xlabel('Training Set Size')
-    plt.ylabel('Accuracy')
-    plt.title('Learning Curves')
-    plt.legend(loc='best')
-    plt.grid()
-    plt.show()
+    # Model architecture
+    model = tf.keras.Sequential([
+        tf.keras.layers.Dense(64, activation='relu', input_shape=(X_train_selected.shape[1],)),
+        tf.keras.layers.Dense(32, activation='relu'),
+        tf.keras.layers.Dense(1, activation='sigmoid')  # Sigmoid activation fn
+    ])
 
-    print(len(X_test))
- # Saving Learning Curve
+    # Defining the optimizer with a learning rate of 0.01
+    optimizer = tf.keras.optimizers.SGD(learning_rate=0.01)
+
+    # Compiling the model with binary cross-entropy loss and Binary_Accuracy as the metric
+    model.compile(loss='binary_crossentropy', optimizer=optimizer,
+                  metrics=[tf.keras.metrics.BinaryAccuracy(), tf.keras.metrics.Precision(),
+                           tf.keras.metrics.Recall()])
+
+    # Train the model
+    history = model.fit(X_train_selected, y_train, epochs=50, batch_size=36, validation_data=(X_val_selected, y_val),
+                        verbose=2)
+
+    # Evaluate the model on the test set
+    loss, binary_accuracy, precision, recall = model.evaluate(X_test_selected, y_test)
+    print("Binary Cross-Entropy Loss:", loss)
+    print("Binary Accuracy on test set:", binary_accuracy)
+    print("Precision on test set:", precision)
+    print("Recall on test set:", recall)
+
+    # Make predictions on the test set
+    binary_preds = model.predict(X_test_selected)
+    # Round the predictions to get the binary class labels (0 or 1)
+    binary_preds_rounded = [1 if pred > 0.5 else 0 for pred in binary_preds]
+
+    # Calculate F1-score for binary classification
+    f1 = f1_score(y_test, binary_preds_rounded)
+    print("F1-score: {:.2f}".format(f1))
+    print(len(binary_preds_rounded ))
+# Saving X_train_selected, X_test_selected, X_val_selected, y_train, y_val, y_test
     doggo = PandasDoggo()
-    im_path = "s3://csmediabrain-mediabrain/prod_mb/data_source/machine_learning_data/lc.png"
-    doggo.save(plt, im_path, file_format='png')
 
-    print(len(X_train))
-    """
+    X_train_selected = pd.DataFrame(X_train_selected)
+    path = "s3://csmediabrain-mediabrain/prod_mb/data_source/machine_learning_data/X_train.csv"
+    doggo.save(X_train_selected, path)
+    X_test_selected = pd.DataFrame(X_test_selected)
+    path = "s3://csmediabrain-mediabrain/prod_mb/data_source/machine_learning_data/X_test.csv"
+    doggo.save(X_test_selected, path)
+    X_val_selected = pd.DataFrame(X_val_selected)
+    path = "s3://csmediabrain-mediabrain/prod_mb/data_source/machine_learning_data/X_val.csv"
+    doggo.save(X_val_selected, path)
 
-    def custom_f1_scorer_wrapper(y_test):
-        def custom_f1_scorer(estimator, X, y):
-            binary_preds = estimator.predict(X)
-            # Ensure binary_preds is in the correct format (binary)
-            binary_preds = check_array(binary_preds, ensure_2d=False)
-            binary_preds = (binary_preds > 0.5).astype(np.int64)
+    y_train = pd.DataFrame(y_train)
+    path = "s3://csmediabrain-mediabrain/prod_mb/data_source/machine_learning_data/y_train.csv"
+    doggo.save(y_train, path)
+    y_test = pd.DataFrame(y_test)
+    path = "s3://csmediabrain-mediabrain/prod_mb/data_source/machine_learning_data/y_test.csv"
+    doggo.save(y_test, path)
+    y_val = pd.DataFrame(y_val)
+    path = "s3://csmediabrain-mediabrain/prod_mb/data_source/machine_learning_data/y_val.csv"
+    doggo.save(y_val, path)
 
-            # Calculate F1 score
-            f1 = f1_score(y_test, binary_preds)
-            return f1
+    print("Saved X and y splits complete")
 
-        return custom_f1_scorer
+    print("Part B Complete")
 
-    # Create the custom F1 scorer with y_test fixed using closure
-    custom_f1_scorer_fixed = custom_f1_scorer_wrapper(y_test)
-
-    # Permutation_importance
-    result_test = permutation_importance(model, X_test, y_test,
-                                         n_repeats=30, random_state=0,
-                                         scoring=custom_f1_scorer_fixed)
-
-    print("Pemutation importance done")
-
-    sorted_importances_idx = result_test.importances_mean.argsort()
-    importances_test = pd.DataFrame(
-        result_test.importances[sorted_importances_idx].T,
-        columns=X.columns[sorted_importances_idx],
-    )
-
-    f, axs = plt.subplots(1, 2, figsize=(15, 5))
-
-    importances_test.plot.box(vert=False, whis=10, ax=axs[0])
-    axs[0].set_title("Permutation Importances (test set)")
-    axs[0].axvline(x=0, color="k", linestyle="--")
-    axs[0].set_xlabel("Decrease in accuracy score")
-    axs[0].figure.tight_layout()
-
-    print("Perm Done")
-
-
-
-    print(len(y_pred))
 if __name__ == '__main__':
  run_program('PyCharm')
 
