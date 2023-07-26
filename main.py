@@ -12,7 +12,6 @@ from sklearn.preprocessing import MinMaxScaler
 # Libraries for Plots/Data Visualisations
 import matplotlib.pyplot as plt
 
-
 # Libraries for Modelling
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report
@@ -109,7 +108,7 @@ def run_program(name):
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=77, stratify = y )
     X_train.head()
 # Modelling
-
+    """
 
     # Logistic Regression
 
@@ -123,10 +122,12 @@ def run_program(name):
     f1 = f1_score(y_test, log_y_pred)
     precision = precision_score(y_test, log_y_pred)
     recall = recall_score(y_test, log_y_pred)
+    print("Confusion Matrix:")
+    print(confusion_matrix(y_test, log_y_pred))
     print("Precision:", precision)
     print("Recall:", recall)
     print("F1 Score:", f1)
-
+    """
     # For Models not requiring scaling
     del new_df
     # Splitting data into X (features) and y (target variable)
@@ -154,6 +155,8 @@ def run_program(name):
     f1 = f1_score(y_test, y_pred)
     precision = precision_score(y_test, y_pred)
     recall = recall_score(y_test, y_pred)
+    print("Confusion Matrix:")
+    print(confusion_matrix(y_test, y_pred))
     print("Precision:", precision)
     print("Recall:", recall)
     print("F1 Score:", f1)
@@ -168,6 +171,8 @@ def run_program(name):
     f1 = f1_score(y_test, y_pred)
     precision = precision_score(y_test, y_pred)
     recall = recall_score(y_test, y_pred)
+    print("Confusion Matrix:")
+    print(confusion_matrix(y_test, y_pred))
     print("Precision:", precision)
     print("Recall:", recall)
     print("F1 Score:", f1)
@@ -183,6 +188,8 @@ def run_program(name):
     f1 = f1_score(y_test, y_pred)
     precision = precision_score(y_test, y_pred)
     recall = recall_score(y_test, y_pred)
+    print("Confusion Matrix:")
+    print(confusion_matrix(y_test, y_pred))
     print("Precision:", precision)
     print("Recall:", recall)
     print("F1 score:", f1)
@@ -197,10 +204,12 @@ def run_program(name):
     f1 = f1_score(y_test, y_pred)
     precision = precision_score(y_test, y_pred)
     recall = recall_score(y_test, y_pred)
+    print("Confusion Matrix:")
+    print(confusion_matrix(y_test, y_pred))
     print("Precision:", precision)
     print("F1 score:", f1)
     print("Recall:", recall)
-
+    
     print("Shape of X:", X.shape)
     print("Shape of y:", y.shape)
 
@@ -242,6 +251,8 @@ def run_program(name):
 
     # Calculate F1-score for binary classification
     f1 = f1_score(y_test, binary_preds_rounded)
+    print("Confusion Matrix:")
+    print(confusion_matrix(y_test, binary_preds_rounded))
     print("F1-score: {:.2f}".format(f1))
     print("F1-score: {:.2f}".format(f1))
 # Detection of model fit given the set hyperparameters
@@ -303,6 +314,8 @@ def run_program(name):
 
     # Calculate F1-score for binary classification
     f1 = f1_score(y_test, binary_preds_rounded)
+    print("Confusion Matrix:")
+    print(confusion_matrix(y_test, binary_preds_rounded))
     print("F1-score: {:.2f}".format(f1))
     print(len(binary_preds_rounded ))
 # Saving X_train_selected, X_test_selected, X_val_selected, y_train, y_val, y_test
