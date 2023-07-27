@@ -14,7 +14,6 @@ import matplotlib.pyplot as plt
 
 # Libraries for Modelling
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import classification_report
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
@@ -31,141 +30,65 @@ from sklearn.metrics import make_scorer, f1_score
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import precision_score, recall_score
 
+# Re-sampling
+from imblearn.over_sampling import RandomOverSampler
+from imblearn.over_sampling import SMOTE
+from imblearn.over_sampling import BorderlineSMOTE
+from imblearn.over_sampling import ADASYN
+from sklearn.utils import shuffle
 
-# Feature Selection
-from sklearn.feature_selection import SelectKBest, chi2
-
-def run_program(name):
-    # Loading refined dataframes
+def run_program(main):
+# Loading reduced dataframes
     atd = AwsToDf()
-    new_df = atd.files_to_df('prod_mb/data_source/machine_learning_data', 'ML_df3.csv','csv', has_header = True)
-    segment_df = atd.files_to_df('prod_mb/data_source/machine_learning_data', 'segment.csv','csv', has_header = True)
-    mrkt_hh = atd.files_to_df('prod_mb/data_source/machine_learning_data', 'market_hh.csv','csv', has_header = True)
+    X_train = atd.files_to_df('prod_mb/data_source/machine_learning_data', 'X_train.csv', 'csv', has_header=True)
+    X_val = atd.files_to_df('prod_mb/data_source/machine_learning_data', 'X_val.csv', 'csv', has_header=True)
+    X_test = atd.files_to_df('prod_mb/data_source/machine_learning_data', 'X_test.csv', 'csv', has_header=True)
 
-    print('check 1')
-    # Converting time to hour of day
-    new_df['time'] = pd.to_datetime(new_df['time'])
-    new_df['hour_of_day'] = new_df['time'].dt.hour
-    new_df = new_df.drop(['time', 'Unnamed: 0'], axis=1)
-    print(new_df.head())
-    # Merge
-    n_df = new_df.merge(segment_df, on = "hh_id", how = 'left')
-    n_df = n_df.merge(mrkt_hh, on = 'hh_id', how = 'left')
-    n_df = n_df.drop(['market_name','series_name'], axis = 1)
-    print(len(n_df))
-    n_df.isna().sum()
+    y_train = atd.files_to_df('prod_mb/data_source/machine_learning_data', 'y_train.csv', 'csv', has_header=True)
+    y_test = atd.files_to_df('prod_mb/data_source/machine_learning_data', 'y_test.csv', 'csv', has_header=True)
+    y_val = atd.files_to_df('prod_mb/data_source/machine_learning_data', 'y_val.csv', 'csv', has_header=True)
 
-# Manipulating for dummy conversion and reading
-    n_df['hh_id'] = 'h ' + n_df['hh_id'].astype(str)
-    n_df['network_id'] = 'n ' + n_df['network_id'].astype(str)
-    n_df['station_id'] = 'st ' + n_df['station_id'].astype(str)
-    n_df['genre_id'] = 'g ' + n_df['genre_id'].astype(str)
-    n_df['market_id'] = 'mk ' + n_df['market_id'].astype(str)
+    print(X_train.head())
+    #Dropping Un-named columns
+    X_train = X_train.drop(['Unnamed: 0'], axis = 1)
+    X_val = X_val.drop(['Unnamed: 0'], axis = 1)
+    X_test = X_test.drop(['Unnamed: 0'], axis = 1)
 
-    print(n_df.head())
+    y_train = y_train.drop(['Unnamed: 0'], axis = 1)
+    y_val = y_val.drop(['Unnamed: 0'], axis = 1)
+    y_test = y_test.drop(['Unnamed: 0'], axis = 1)
 
-# Scaling hour of day
-    scaler = MinMaxScaler()
-    hod_scaled = scaler.fit_transform(n_df['hour_of_day'].values.reshape(-1, 1))
-    n_df['hour_of_day_scaled'] = hod_scaled
-    print(n_df.head())
+    print("Sets refined")
+# Random Under-sampling
 
-# Dummy Dataframe
-    # Getting dummies -----OHE
-    day_dummy = pd.get_dummies(n_df.day)
-    hh_dummy = pd.get_dummies(n_df.hh_id)
-    network_dummy = pd.get_dummies(n_df.network_id)
-    station_dummy = pd.get_dummies(n_df.station_id)
-    season_dummy = pd.get_dummies(n_df.season)
-    genre_dummy = pd.get_dummies(n_df.genre_id)
-    mrkt_dummy = pd.get_dummies(n_df.market_id)
+    #Seperating majority and minority classes after concatination
+    X_y = pd.concat([X_train, y_train], axis=1)
+    majority_class_samples = X_y[X_y['watched'] == 0]
+    minority_class_samples = X_y[X_y['watched']== 1]
+    print(len(minority_class_samples))
 
-    print('Dummies created')
+    #shuffling and then selecting instances of majority class (same as the len of minority class)
+    n = len(minority_class_samples)
+    majority_class_samples = shuffle(majority_class_samples, random_state=42)
+    majority_class_samples = majority_class_samples[:n]
+    len(majority_class_samples)
 
-    #Dropping and concating
-    n_df = n_df.drop(['hh_id','day','network_id','station_id','season','genre_id','market_id','combination'], axis = 1)
-    n_df = pd.concat([n_df, day_dummy, hh_dummy, network_dummy, station_dummy, season_dummy, genre_dummy, mrkt_dummy], axis = 1)
+    #Combining the classes
+    n_df = pd.concat([majority_class_samples, minority_class_samples], axis = 0)
+    len(n_df)
+    #Splitting into X and y
+    X_train_rus = n_df.drop(['watched'], axis = 1)
+    y_train_rus = n_df['watched']
+    print(" RUS conducted")
+#Random forest
+    #Fitting
+    rf = RandomForestClassifier(n_estimators=100, random_state=42)
+    rf.fit(X_train_rus, y_train_rus)
 
-    n_df.head()
-    print(len(n_df))
-    # Removing unnamed columns
-    n_df = n_df.drop(['Unnamed: 0_y','Unnamed: 0_x'], axis = 1)
-
-    n_df.head()
-
-# Converting bool into 0/1 for MLP processing
-    n_df['is_latest_season'] = n_df['is_latest_season'].astype(int)
-    n_df['is_national'] = n_df['is_national'].astype(int)
-
-    print(n_df.head)
-    # Splitting into train and test---For Models requiring scaling
-    # Split data into X (features) and y (target variable)
-    X = n_df.drop(['watched','hour_of_day'], axis=1)
-    y = n_df['watched']
-
-    X.columns = X.columns.astype(str)
-    # Split data into training and testing sets
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=77, stratify = y )
-    X_train.head()
-# Modelling
-    """
-
-    # Logistic Regression
-
-    log = LogisticRegression(random_state=77, max_iter=1000)
-
-    log.fit(X_train, y_train)
-    log_y_pred = log.predict(X_test)
-    
-    accuracy = accuracy_score(y_test, log_y_pred)
-    print("Accuracy:", accuracy)
-    f1 = f1_score(y_test, log_y_pred)
-    precision = precision_score(y_test, log_y_pred)
-    recall = recall_score(y_test, log_y_pred)
-    print("Confusion Matrix:")
-    print(confusion_matrix(y_test, log_y_pred))
-    print("Precision:", precision)
-    print("Recall:", recall)
-    print("F1 Score:", f1)
-    """
-    # For Models not requiring scaling
-    del new_df
-    # Splitting data into X (features) and y (target variable)
-    X = n_df.drop(['watched','hour_of_day_scaled'], axis=1)
-    y = n_df['watched']
-    X.columns = X.columns.astype(str)
-    # Split data into training and testing sets
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=77, stratify=y)
-    X_train.head()
-    # Deleting un-necessary variables
-    del day_dummy, genre_dummy, hh_dummy, mrkt_dummy, mrkt_hh, network_dummy, season_dummy, segment_df, station_dummy
-    # Splitting data into train and val
-    X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.2, random_state=42, stratify=y_train)
-
-    print("Train/val split complete")
-    # KNN Classifier --- eliminated due to requirement of excess memory
-
-    # Decision Tree Classifier
-
-    dt = DecisionTreeClassifier(random_state=42)
-    dt.fit(X_train, y_train)
-    y_pred = dt.predict(X_test)
-    accuracy = accuracy_score(y_test, y_pred)
-    print("Accuracy:", accuracy)
-    f1 = f1_score(y_test, y_pred)
-    precision = precision_score(y_test, y_pred)
-    recall = recall_score(y_test, y_pred)
-    print("Confusion Matrix:")
-    print(confusion_matrix(y_test, y_pred))
-    print("Precision:", precision)
-    print("Recall:", recall)
-    print("F1 Score:", f1)
-
-    # RF Classifier
-
-    rf = RandomForestClassifier(n_estimators= 100, random_state=42)
-    rf.fit(X_train, y_train)
+    #Predicting
     y_pred = rf.predict(X_test)
+
+    #Prediction Metrics
     accuracy = accuracy_score(y_test, y_pred)
     print("Accuracy:", accuracy)
     f1 = f1_score(y_test, y_pred)
@@ -176,29 +99,14 @@ def run_program(name):
     print("Precision:", precision)
     print("Recall:", recall)
     print("F1 Score:", f1)
-
-
-   # Gradient Boosting Classifier (GBC)
-
-    gbc = GradientBoostingClassifier(random_state=42)
-    gbc.fit(X_train, y_train)
-    y_pred = gbc.predict(X_test)
-    accuracy = accuracy_score(y_test, y_pred)
-    print("Accuracy:", accuracy)
-    f1 = f1_score(y_test, y_pred)
-    precision = precision_score(y_test, y_pred)
-    recall = recall_score(y_test, y_pred)
-    print("Confusion Matrix:")
-    print(confusion_matrix(y_test, y_pred))
-    print("Precision:", precision)
-    print("Recall:", recall)
-    print("F1 score:", f1)
-
-    # XG Boost
-
+    print("RUS - rf")
+# XG Boost
+    #Fitting
     xgb_classifier = xgb.XGBClassifier()
-    xgb_classifier.fit(X_train, y_train)
+    xgb_classifier.fit(X_train_rus, y_train_rus)
+    #Predicting
     y_pred = xgb_classifier.predict(X_test)
+    #Prediction Performance Metrics
     accuracy = accuracy_score(y_test, y_pred)
     print("Accuracy:", accuracy)
     f1 = f1_score(y_test, y_pred)
@@ -209,21 +117,17 @@ def run_program(name):
     print("Precision:", precision)
     print("F1 score:", f1)
     print("Recall:", recall)
-    
-    print("Shape of X:", X.shape)
-    print("Shape of y:", y.shape)
 
-    print("size check")
+    print("RUS - XG Boost")
 
-    # MLP
-    # Set random seed
+# MLP
     tf.random.set_seed(42)
 
     # Model architecture
     model = tf.keras.Sequential([
-        tf.keras.layers.Dense(64, activation='relu', input_shape=(X_train.shape[1],)),
-        tf.keras.layers.Dense(32, activation='relu'),
-        tf.keras.layers.Dense(1, activation='sigmoid')  # Sigmoid activation fn
+    tf.keras.layers.Dense(64, activation='relu', input_shape=(X_train_rus.shape[1],)),
+    tf.keras.layers.Dense(32, activation='relu'),
+    tf.keras.layers.Dense(1, activation='sigmoid')  # Sigmoid activation fn
     ])
 
     # Defining the optimizer with a learning rate of 0.01
@@ -231,11 +135,11 @@ def run_program(name):
 
     # Compiling the model with binary cross-entropy loss and Binary_Accuracy as the metric
     model.compile(loss='binary_crossentropy', optimizer=optimizer,
-                  metrics=[tf.keras.metrics.BinaryAccuracy(), tf.keras.metrics.Precision(),
-                           tf.keras.metrics.Recall()])
+              metrics=[tf.keras.metrics.BinaryAccuracy(), tf.keras.metrics.Precision(),
+                       tf.keras.metrics.Recall()])
 
     # Train the model
-    history = model.fit(X_train, y_train, epochs=50, batch_size=36, validation_data=(X_val, y_val), verbose=2)
+    history = model.fit(X_train_rus, y_train_rus, epochs=50, batch_size=36, validation_data=(X_val, y_val), verbose=2)
 
     # Evaluate the model on the test set
     loss, binary_accuracy, precision, recall = model.evaluate(X_test, y_test)
@@ -255,60 +159,62 @@ def run_program(name):
     print(confusion_matrix(y_test, binary_preds_rounded))
     print("F1-score: {:.2f}".format(f1))
     print("F1-score: {:.2f}".format(f1))
-# Detection of model fit given the set hyperparameters
 
-    # Plot the loss curve for training and validation
-    plt.plot(history.history['loss'], label='Training Loss')
-    plt.plot(history.history['val_loss'], label='Validation Loss')
-    plt.xlabel('Epoch')
-    plt.ylabel('Loss')
-    plt.legend()
-    plt.title('Training and Validation Loss')
-    plt.show()
+# Resampling---ROS
 
-    print("Overfit Detected")
+    ros = RandomOverSampler(random_state=42)
+    X_train_ros, y_train_ros = ros.fit_resample(X_train, y_train)
+    len(X_train_ros)
+    print(y_train_ros.value_counts())
+    print(X_test.head())
+    # Model Fitting
+    dt = DecisionTreeClassifier(random_state=42)
+    dt.fit(X_train_ros, y_train_ros)
 
-# Univariate Feature Selection
-    # Results checked with k=150,200,300,500,800. Best when k=300, hence chosen
+    #Predicting
+    y_pred = dt.predict(X_test)
+    accuracy = accuracy_score(y_test, y_pred)
+    print("Accuracy:", accuracy)
+    f1 = f1_score(y_test, y_pred)
+    precision = precision_score(y_test, y_pred)
+    recall = recall_score(y_test, y_pred)
+    print("Confusion Matrix:")
+    print(confusion_matrix(y_test, y_pred))
+    print("Precision:", precision)
+    print("Recall:", recall)
+    print("F1 Score:", f1)
 
-    k = 300
-    selector = SelectKBest(chi2, k=k)
-    X_train_selected = selector.fit_transform(X_train, y_train)
-    X_val_selected = selector.transform(X_val)
-    X_test_selected = selector.transform(X_test)
-
-    print("Univariate FS")
-    # MLP
+    print("dt")
+# Set random seed
     tf.random.set_seed(42)
 
-    # Model architecture
+        # Model architecture
     model = tf.keras.Sequential([
-        tf.keras.layers.Dense(64, activation='relu', input_shape=(X_train_selected.shape[1],)),
-        tf.keras.layers.Dense(32, activation='relu'),
-        tf.keras.layers.Dense(1, activation='sigmoid')  # Sigmoid activation fn
-    ])
+            tf.keras.layers.Dense(64, activation='relu', input_shape=(X_train_ros.shape[1],)),
+            tf.keras.layers.Dense(32, activation='relu'),
+            tf.keras.layers.Dense(1, activation='sigmoid')  # Sigmoid activation fn
+        ])
 
     # Defining the optimizer with a learning rate of 0.01
     optimizer = tf.keras.optimizers.SGD(learning_rate=0.01)
 
     # Compiling the model with binary cross-entropy loss and Binary_Accuracy as the metric
     model.compile(loss='binary_crossentropy', optimizer=optimizer,
-                  metrics=[tf.keras.metrics.BinaryAccuracy(), tf.keras.metrics.Precision(),
-                           tf.keras.metrics.Recall()])
+                      metrics=[tf.keras.metrics.BinaryAccuracy(), tf.keras.metrics.Precision(),
+                               tf.keras.metrics.Recall()])
 
     # Train the model
-    history = model.fit(X_train_selected, y_train, epochs=50, batch_size=36, validation_data=(X_val_selected, y_val),
-                        verbose=2)
+    history = model.fit(X_train_ros, y_train_ros, epochs=50, batch_size=36, validation_data=(X_val, y_val), verbose=2)
 
     # Evaluate the model on the test set
-    loss, binary_accuracy, precision, recall = model.evaluate(X_test_selected, y_test)
+    loss, binary_accuracy, precision, recall = model.evaluate(X_test, y_test)
     print("Binary Cross-Entropy Loss:", loss)
     print("Binary Accuracy on test set:", binary_accuracy)
     print("Precision on test set:", precision)
     print("Recall on test set:", recall)
 
     # Make predictions on the test set
-    binary_preds = model.predict(X_test_selected)
+    binary_preds = model.predict(X_test)
     # Round the predictions to get the binary class labels (0 or 1)
     binary_preds_rounded = [1 if pred > 0.5 else 0 for pred in binary_preds]
 
@@ -317,34 +223,108 @@ def run_program(name):
     print("Confusion Matrix:")
     print(confusion_matrix(y_test, binary_preds_rounded))
     print("F1-score: {:.2f}".format(f1))
-    print(len(binary_preds_rounded ))
-# Saving X_train_selected, X_test_selected, X_val_selected, y_train, y_val, y_test
-    doggo = PandasDoggo()
+    print("F1-score: {:.2f}".format(f1))
 
-    X_train_selected = pd.DataFrame(X_train_selected)
-    path = "s3://csmediabrain-mediabrain/prod_mb/data_source/machine_learning_data/X_train.csv"
-    doggo.save(X_train_selected, path)
-    X_test_selected = pd.DataFrame(X_test_selected)
-    path = "s3://csmediabrain-mediabrain/prod_mb/data_source/machine_learning_data/X_test.csv"
-    doggo.save(X_test_selected, path)
-    X_val_selected = pd.DataFrame(X_val_selected)
-    path = "s3://csmediabrain-mediabrain/prod_mb/data_source/machine_learning_data/X_val.csv"
-    doggo.save(X_val_selected, path)
+#from imblearn.over_sampling import SMOTE
 
-    y_train = pd.DataFrame(y_train)
-    path = "s3://csmediabrain-mediabrain/prod_mb/data_source/machine_learning_data/y_train.csv"
-    doggo.save(y_train, path)
-    y_test = pd.DataFrame(y_test)
-    path = "s3://csmediabrain-mediabrain/prod_mb/data_source/machine_learning_data/y_test.csv"
-    doggo.save(y_test, path)
-    y_val = pd.DataFrame(y_val)
-    path = "s3://csmediabrain-mediabrain/prod_mb/data_source/machine_learning_data/y_val.csv"
-    doggo.save(y_val, path)
+# Assuming you have your feature matrix X and target vector y
+    smote = SMOTE(random_state=42)
+    X_train_sm, y_train_sm = smote.fit_resample(X_train, y_train)
+    len(X_train_sm)
+    print(y_train_sm.value_counts())
 
-    print("Saved X and y splits complete")
+    print("SMOTHE")
+    tf.random.set_seed(42)
 
-    print("Part B Complete")
+    # Model architecture
+    model = tf.keras.Sequential([
+            tf.keras.layers.Dense(64, activation='relu', input_shape=(X_train_sm.shape[1],)),
+            tf.keras.layers.Dense(32, activation='relu'),
+            tf.keras.layers.Dense(1, activation='sigmoid')  # Sigmoid activation fn
+        ])
+
+    # Defining the optimizer with a learning rate of 0.01
+    optimizer = tf.keras.optimizers.SGD(learning_rate=0.01)
+
+    # Compiling the model with binary cross-entropy loss and Binary_Accuracy as the metric
+    model.compile(loss='binary_crossentropy', optimizer=optimizer,
+                      metrics=[tf.keras.metrics.BinaryAccuracy(), tf.keras.metrics.Precision(),
+                               tf.keras.metrics.Recall()])
+
+    # Train the model
+    history = model.fit(X_train_sm, y_train_sm, epochs=50, batch_size=36, validation_data=(X_val, y_val), verbose=2)
+
+    # Evaluate the model on the test set
+    loss, binary_accuracy, precision, recall = model.evaluate(X_test, y_test)
+    print("Binary Cross-Entropy Loss:", loss)
+    print("Binary Accuracy on test set:", binary_accuracy)
+    print("Precision on test set:", precision)
+    print("Recall on test set:", recall)
+
+    # Make predictions on the test set
+    binary_preds = model.predict(X_test)
+    # Round the predictions to get the binary class labels (0 or 1)
+    binary_preds_rounded = [1 if pred > 0.5 else 0 for pred in binary_preds]
+
+    # Calculate F1-score for binary classification
+    f1 = f1_score(y_test, binary_preds_rounded)
+    print("Confusion Matrix:")
+    print(confusion_matrix(y_test, binary_preds_rounded))
+    print("F1-score: {:.2f}".format(f1))
+    print("F1-score: {:.2f}".format(f1))
+
+    # RUS
+    X_y_train = pd.concat([X_train, y_train], axis=1)
+    random_state_value = 42  # Set the random seed for reproducibility
+    X_y_train_combined = shuffle(X_y_train, random_state=random_state_value)
+
+    # Separate majority and minority class samples
+    majority_class_samples = X_y_train[y_train == 0]
+    minority_class_samples = X_y_train[y_train == 1]
+
+    
+
+    print("RUS applied")
+    tf.random.set_seed(42)
+
+    # Model architecture
+    model = tf.keras.Sequential([
+            tf.keras.layers.Dense(64, activation='relu', input_shape=(X_train_rus.shape[1],)),
+            tf.keras.layers.Dense(32, activation='relu'),
+            tf.keras.layers.Dense(1, activation='sigmoid')  # Sigmoid activation fn
+        ])
+
+    # Defining the optimizer with a learning rate of 0.01
+    optimizer = tf.keras.optimizers.SGD(learning_rate=0.01)
+
+    # Compiling the model with binary cross-entropy loss and Binary_Accuracy as the metric
+    model.compile(loss='binary_crossentropy', optimizer=optimizer,
+                      metrics=[tf.keras.metrics.BinaryAccuracy(), tf.keras.metrics.Precision(),
+                               tf.keras.metrics.Recall()])
+
+    # Train the model
+    history = model.fit(X_train_rus, y_train_rus, epochs=50, batch_size=36, validation_data=(X_val, y_val), verbose=2)
+
+    # Evaluate the model on the test set
+    loss, binary_accuracy, precision, recall = model.evaluate(X_test, y_test)
+    print("Binary Cross-Entropy Loss:", loss)
+    print("Binary Accuracy on test set:", binary_accuracy)
+    print("Precision on test set:", precision)
+    print("Recall on test set:", recall)
+
+    # Make predictions on the test set
+    binary_preds = model.predict(X_test)
+    # Round the predictions to get the binary class labels (0 or 1)
+    binary_preds_rounded = [1 if pred > 0.5 else 0 for pred in binary_preds]
+
+    # Calculate F1-score for binary classification
+    f1 = f1_score(y_test, binary_preds_rounded)
+    print("Confusion Matrix:")
+    print(confusion_matrix(y_test, binary_preds_rounded))
+    print("F1-score: {:.2f}".format(f1))
+    print("F1-score: {:.2f}".format(f1))
+
+
 
 if __name__ == '__main__':
- run_program('PyCharm')
-
+    run_program('PyCharm')
