@@ -80,7 +80,45 @@ def run_program(main):
     X_train_rus = n_df.drop(['watched'], axis = 1)
     y_train_rus = n_df['watched']
     print(" RUS conducted")
+# Logistic Regression
+    # Fitting
+    log = LogisticRegression(random_state=77, max_iter=1000)
+    log.fit(X_train_rus, y_train_rus)
+    #Predicting
+    log_y_pred = log.predict(X_test)
+    #Prediction Performance Metrics
+    accuracy = accuracy_score(y_test, log_y_pred)
+    print("Accuracy:", accuracy)
+    f1 = f1_score(y_test, log_y_pred)
+    precision = precision_score(y_test, log_y_pred)
+    recall = recall_score(y_test, log_y_pred)
+    print("Confusion Matrix:")
+    print(confusion_matrix(y_test, log_y_pred))
+    print("Precision:", precision)
+    print("Recall:", recall)
+    print("F1 Score:", f1)
+    print("RUS - lOG REG")
+
+# Decision Tree
+    # Model Fitting
+    dt = DecisionTreeClassifier(random_state=42)
+    dt.fit(X_train_rus, y_train_rus)
+
+    #Predicting
+    y_pred = dt.predict(X_test)
+    accuracy = accuracy_score(y_test, y_pred)
+    print("Accuracy:", accuracy)
+    f1 = f1_score(y_test, y_pred)
+    precision = precision_score(y_test, y_pred)
+    recall = recall_score(y_test, y_pred)
+    print("Confusion Matrix:")
+    print(confusion_matrix(y_test, y_pred))
+    print("Precision:", precision)
+    print("Recall:", recall)
+    print("F1 Score:", f1)
+    print("RUS - Dt")
 #Random forest
+
     #Fitting
     rf = RandomForestClassifier(n_estimators=100, random_state=42)
     rf.fit(X_train_rus, y_train_rus)
@@ -100,6 +138,26 @@ def run_program(main):
     print("Recall:", recall)
     print("F1 Score:", f1)
     print("RUS - rf")
+
+# Gradient Boosting Classifier (GBC)
+    #Fitting
+    gbc = GradientBoostingClassifier(random_state=42)
+    gbc.fit(X_train_rus, y_train_rus)
+    #Predicting
+    y_pred = gbc.predict(X_test)
+    accuracy = accuracy_score(y_test, y_pred)
+    #Prediction Performance Metrics
+    print("Accuracy:", accuracy)
+    f1 = f1_score(y_test, y_pred)
+    precision = precision_score(y_test, y_pred)
+    recall = recall_score(y_test, y_pred)
+    print("Confusion Matrix:")
+    print(confusion_matrix(y_test, y_pred))
+    print("Precision:", precision)
+    print("Recall:", recall)
+    print("F1 score:", f1)
+    print("RUS - BGC")
+
 # XG Boost
     #Fitting
     xgb_classifier = xgb.XGBClassifier()
@@ -159,7 +217,6 @@ def run_program(main):
     print(confusion_matrix(y_test, binary_preds_rounded))
     print("F1-score: {:.2f}".format(f1))
     print("F1-score: {:.2f}".format(f1))
-
 # Resampling---ROS
 
     ros = RandomOverSampler(random_state=42)
@@ -167,6 +224,8 @@ def run_program(main):
     len(X_train_ros)
     print(y_train_ros.value_counts())
     print(X_test.head())
+#Decesion Tree
+
     # Model Fitting
     dt = DecisionTreeClassifier(random_state=42)
     dt.fit(X_train_ros, y_train_ros)
@@ -183,16 +242,78 @@ def run_program(main):
     print("Precision:", precision)
     print("Recall:", recall)
     print("F1 Score:", f1)
+    print("ROS - Dt")
 
-    print("dt")
-# Set random seed
+#Random forest
+
+    #Fitting
+    rf = RandomForestClassifier(n_estimators=100, random_state=42)
+    rf.fit(X_train_ros, y_train_ros)
+
+    #Predicting
+    y_pred = rf.predict(X_test)
+
+    #Prediction Metrics
+    accuracy = accuracy_score(y_test, y_pred)
+    print("Accuracy:", accuracy)
+    f1 = f1_score(y_test, y_pred)
+    precision = precision_score(y_test, y_pred)
+    recall = recall_score(y_test, y_pred)
+    print("Confusion Matrix:")
+    print(confusion_matrix(y_test, y_pred))
+    print("Precision:", precision)
+    print("Recall:", recall)
+    print("F1 Score:", f1)
+    print("ROS - rf")
+
+# Gradient Boosting Classifier (GBC)
+    #Fitting
+    gbc = GradientBoostingClassifier(random_state=42)
+    gbc.fit(X_train_ros, y_train_ros)
+    #Predicting
+    y_pred = gbc.predict(X_test)
+    accuracy = accuracy_score(y_test, y_pred)
+    #Prediction Performance Metrics
+    print("Accuracy:", accuracy)
+    f1 = f1_score(y_test, y_pred)
+    precision = precision_score(y_test, y_pred)
+    recall = recall_score(y_test, y_pred)
+    print("Confusion Matrix:")
+    print(confusion_matrix(y_test, y_pred))
+    print("Precision:", precision)
+    print("Recall:", recall)
+    print("F1 score:", f1)
+    print("ROS - BGC")
+
+# XG Boost
+    #Fitting
+    xgb_classifier = xgb.XGBClassifier()
+    xgb_classifier.fit(X_train_ros, y_train_ros)
+    #Predicting
+    y_pred = xgb_classifier.predict(X_test)
+    #Prediction Performance Metrics
+    accuracy = accuracy_score(y_test, y_pred)
+    print("Accuracy:", accuracy)
+    f1 = f1_score(y_test, y_pred)
+    precision = precision_score(y_test, y_pred)
+    recall = recall_score(y_test, y_pred)
+    print("Confusion Matrix:")
+    print(confusion_matrix(y_test, y_pred))
+    print("Precision:", precision)
+    print("F1 score:", f1)
+    print("Recall:", recall)
+
+    print("ROS - XG Boost")
+
+# MLP
+    # Set random seed
     tf.random.set_seed(42)
 
-        # Model architecture
+    # Model architecture
     model = tf.keras.Sequential([
             tf.keras.layers.Dense(64, activation='relu', input_shape=(X_train_ros.shape[1],)),
             tf.keras.layers.Dense(32, activation='relu'),
-            tf.keras.layers.Dense(1, activation='sigmoid')  # Sigmoid activation fn
+            tf.keras.layers.Dense(1, activation='sigmoid')  
         ])
 
     # Defining the optimizer with a learning rate of 0.01
@@ -225,22 +346,98 @@ def run_program(main):
     print("F1-score: {:.2f}".format(f1))
     print("F1-score: {:.2f}".format(f1))
 
-#from imblearn.over_sampling import SMOTE
-
-# Assuming you have your feature matrix X and target vector y
+# SMOTHE
     smote = SMOTE(random_state=42)
     X_train_sm, y_train_sm = smote.fit_resample(X_train, y_train)
     len(X_train_sm)
     print(y_train_sm.value_counts())
 
     print("SMOTHE")
+# Decision Tree
+    # Model Fitting
+    dt = DecisionTreeClassifier(random_state=42)
+    dt.fit(X_train_sm, y_train_sm)
+
+    #Predicting
+    y_pred = dt.predict(X_test)
+    accuracy = accuracy_score(y_test, y_pred)
+    print("Accuracy:", accuracy)
+    f1 = f1_score(y_test, y_pred)
+    precision = precision_score(y_test, y_pred)
+    recall = recall_score(y_test, y_pred)
+    print("Confusion Matrix:")
+    print(confusion_matrix(y_test, y_pred))
+    print("Precision:", precision)
+    print("Recall:", recall)
+    print("F1 Score:", f1)
+    print("SMOTHE - Dt")
+#Random forest
+
+    #Fitting
+    rf = RandomForestClassifier(n_estimators=100, random_state=42)
+    rf.fit(X_train_sm, y_train_sm)
+
+    #Predicting
+    y_pred = rf.predict(X_test)
+
+    #Prediction Metrics
+    accuracy = accuracy_score(y_test, y_pred)
+    print("Accuracy:", accuracy)
+    f1 = f1_score(y_test, y_pred)
+    precision = precision_score(y_test, y_pred)
+    recall = recall_score(y_test, y_pred)
+    print("Confusion Matrix:")
+    print(confusion_matrix(y_test, y_pred))
+    print("Precision:", precision)
+    print("Recall:", recall)
+    print("F1 Score:", f1)
+    print("RUS - rf")
+
+# Gradient Boosting Classifier (GBC)
+    #Fitting
+    gbc = GradientBoostingClassifier(random_state=42)
+    gbc.fit(X_train_sm, y_train_sm)
+    #Predicting
+    y_pred = gbc.predict(X_test)
+    accuracy = accuracy_score(y_test, y_pred)
+    #Prediction Performance Metrics
+    print("Accuracy:", accuracy)
+    f1 = f1_score(y_test, y_pred)
+    precision = precision_score(y_test, y_pred)
+    recall = recall_score(y_test, y_pred)
+    print("Confusion Matrix:")
+    print(confusion_matrix(y_test, y_pred))
+    print("Precision:", precision)
+    print("Recall:", recall)
+    print("F1 score:", f1)
+    print("RUS - BGC")
+# XG Boost
+    #Fitting
+    xgb_classifier = xgb.XGBClassifier()
+    xgb_classifier.fit(X_train_sm, y_train_sm)
+    #Predicting
+    y_pred = xgb_classifier.predict(X_test)
+    #Prediction Performance Metrics
+    accuracy = accuracy_score(y_test, y_pred)
+    print("Accuracy:", accuracy)
+    f1 = f1_score(y_test, y_pred)
+    precision = precision_score(y_test, y_pred)
+    recall = recall_score(y_test, y_pred)
+    print("Confusion Matrix:")
+    print(confusion_matrix(y_test, y_pred))
+    print("Precision:", precision)
+    print("F1 score:", f1)
+    print("Recall:", recall)
+
+    print("RUS - XG Boost")
+# MLP
     tf.random.set_seed(42)
 
     # Model architecture
     model = tf.keras.Sequential([
             tf.keras.layers.Dense(64, activation='relu', input_shape=(X_train_sm.shape[1],)),
             tf.keras.layers.Dense(32, activation='relu'),
-            tf.keras.layers.Dense(1, activation='sigmoid')  # Sigmoid activation fn
+            tf.keras.layers.Dense(1, activation='sigmoid')
         ])
 
     # Defining the optimizer with a learning rate of 0.01
@@ -272,58 +469,6 @@ def run_program(main):
     print(confusion_matrix(y_test, binary_preds_rounded))
     print("F1-score: {:.2f}".format(f1))
     print("F1-score: {:.2f}".format(f1))
-
-    # RUS
-    X_y_train = pd.concat([X_train, y_train], axis=1)
-    random_state_value = 42  # Set the random seed for reproducibility
-    X_y_train_combined = shuffle(X_y_train, random_state=random_state_value)
-
-    # Separate majority and minority class samples
-    majority_class_samples = X_y_train[y_train == 0]
-    minority_class_samples = X_y_train[y_train == 1]
-
-    
-
-    print("RUS applied")
-    tf.random.set_seed(42)
-
-    # Model architecture
-    model = tf.keras.Sequential([
-            tf.keras.layers.Dense(64, activation='relu', input_shape=(X_train_rus.shape[1],)),
-            tf.keras.layers.Dense(32, activation='relu'),
-            tf.keras.layers.Dense(1, activation='sigmoid')  # Sigmoid activation fn
-        ])
-
-    # Defining the optimizer with a learning rate of 0.01
-    optimizer = tf.keras.optimizers.SGD(learning_rate=0.01)
-
-    # Compiling the model with binary cross-entropy loss and Binary_Accuracy as the metric
-    model.compile(loss='binary_crossentropy', optimizer=optimizer,
-                      metrics=[tf.keras.metrics.BinaryAccuracy(), tf.keras.metrics.Precision(),
-                               tf.keras.metrics.Recall()])
-
-    # Train the model
-    history = model.fit(X_train_rus, y_train_rus, epochs=50, batch_size=36, validation_data=(X_val, y_val), verbose=2)
-
-    # Evaluate the model on the test set
-    loss, binary_accuracy, precision, recall = model.evaluate(X_test, y_test)
-    print("Binary Cross-Entropy Loss:", loss)
-    print("Binary Accuracy on test set:", binary_accuracy)
-    print("Precision on test set:", precision)
-    print("Recall on test set:", recall)
-
-    # Make predictions on the test set
-    binary_preds = model.predict(X_test)
-    # Round the predictions to get the binary class labels (0 or 1)
-    binary_preds_rounded = [1 if pred > 0.5 else 0 for pred in binary_preds]
-
-    # Calculate F1-score for binary classification
-    f1 = f1_score(y_test, binary_preds_rounded)
-    print("Confusion Matrix:")
-    print(confusion_matrix(y_test, binary_preds_rounded))
-    print("F1-score: {:.2f}".format(f1))
-    print("F1-score: {:.2f}".format(f1))
-
 
 
 if __name__ == '__main__':

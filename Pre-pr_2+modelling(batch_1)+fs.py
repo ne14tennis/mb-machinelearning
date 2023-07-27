@@ -111,14 +111,13 @@ class a2:
         X_train.head()
         # Modelling
 
-
         # Logistic Regression
 
         log = LogisticRegression(random_state=77, max_iter=1000)
-
         log.fit(X_train, y_train)
+        #Predicting
         log_y_pred = log.predict(X_test)
-
+        #Prediction performance metrics
         accuracy = accuracy_score(y_test, log_y_pred)
         print("Accuracy:", accuracy)
         f1 = f1_score(y_test, log_y_pred)
