@@ -17,7 +17,6 @@ from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.ensemble import GradientBoostingClassifier
 import xgboost as xgb
 
 #MLP
@@ -178,22 +177,6 @@ class a2:
         print("Precision:", precision)
         print("Recall:", recall)
         print("F1 Score:", f1)
-
-        # Gradient Boosting Classifier (GBC)
-
-        gbc = GradientBoostingClassifier(random_state=42)
-        gbc.fit(X_train, y_train)
-        y_pred = gbc.predict(X_test)
-        accuracy = accuracy_score(y_test, y_pred)
-        print("Accuracy:", accuracy)
-        f1 = f1_score(y_test, y_pred)
-        precision = precision_score(y_test, y_pred)
-        recall = recall_score(y_test, y_pred)
-        print("Confusion Matrix:")
-        print(confusion_matrix(y_test, y_pred))
-        print("Precision:", precision)
-        print("Recall:", recall)
-        print("F1 score:", f1)
 
         # XG Boost
 
