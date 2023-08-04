@@ -257,6 +257,12 @@ class a2:
 
         k = 300
         selector = SelectKBest(chi2, k=k)
+
+        # to know which 300 were selected
+        selected_feature_ind = selector.get_support(indices=True)
+        selected_feature_nam = X_train.columns[selected_feature_ind]
+
+        # reducing to 300 features, across X_train,X_test, X_val
         X_train_selected = selector.fit_transform(X_train, y_train)
         X_val_selected = selector.transform(X_val)
         X_test_selected = selector.transform(X_test)
