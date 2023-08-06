@@ -63,12 +63,6 @@ class a2:
 
         print(n_df.head())
 
-        # Scaling hour of day
-        scaler = MinMaxScaler()
-        hod_scaled = scaler.fit_transform(n_df['hour_of_day'].values.reshape(-1, 1))
-        n_df['hour_of_day_scaled'] = hod_scaled
-        print(n_df.head())
-
         # Dummy Dataframe
         # Getting dummies -----OHE
         day_dummy = pd.get_dummies(n_df.day)
@@ -99,39 +93,12 @@ class a2:
         n_df['is_national'] = n_df['is_national'].astype(int)
 
         print(n_df.head)
-        # Splitting into train and test---For Models requiring scaling
-        # Split data into X (features) and y (target variable)
-        X = n_df.drop(['watched', 'hour_of_day'], axis=1)
-        y = n_df['watched']
 
-        X.columns = X.columns.astype(str)
-        # Split data into training and testing sets
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=77, stratify=y)
-        X_train.head()
         # Modelling
 
-        # Logistic Regression
-
-        log = LogisticRegression(random_state=77, max_iter=1000)
-        log.fit(X_train, y_train)
-        #Predicting
-        log_y_pred = log.predict(X_test)
-        #Prediction performance metrics
-        accuracy = accuracy_score(y_test, log_y_pred)
-        print("Accuracy:", accuracy)
-        f1 = f1_score(y_test, log_y_pred)
-        precision = precision_score(y_test, log_y_pred)
-        recall = recall_score(y_test, log_y_pred)
-        print("Confusion Matrix:")
-        print(confusion_matrix(y_test, log_y_pred))
-        print("Precision:", precision)
-        print("Recall:", recall)
-        print("F1 Score:", f1)
-
-        # For Models not requiring scaling
         del new_df
         # Splitting data into X (features) and y (target variable)
-        X = n_df.drop(['watched', 'hour_of_day_scaled'], axis=1)
+        X = n_df.drop(['watched'], axis=1)
         y = n_df['watched']
         X.columns = X.columns.astype(str)
         # Split data into training and testing sets
@@ -144,6 +111,24 @@ class a2:
                                                           stratify=y_train)
 
         print("Train/val split complete")
+        # Logistic Regression
+
+        log = LogisticRegression(random_state=77, max_iter=1000)
+        log.fit(X_train, y_train)
+        # Predicting
+        log_y_pred = log.predict(X_test)
+        # Prediction performance metrics
+        accuracy = accuracy_score(y_test, log_y_pred)
+        print("Accuracy:", accuracy)
+        f1 = f1_score(y_test, log_y_pred)
+        precision = precision_score(y_test, log_y_pred)
+        recall = recall_score(y_test, log_y_pred)
+        print("Confusion Matrix:")
+        print(confusion_matrix(y_test, log_y_pred))
+        print("Precision:", precision)
+        print("Recall:", recall)
+        print("F1 Score:", f1)
+
         # KNN Classifier --- eliminated due to requirement of excess memory
 
         # Decision Tree Classifier
@@ -253,7 +238,7 @@ class a2:
         print("Overfit Detected")
 
         # Univariate Feature Selection
-        # Results checked with k=150,200,300,500,800. Best when k=300, hence chosen
+        # Results checked with k=150,200,300,500,800 on val set. Best when k=300, hence chosen
 
         k = 300
         selector = SelectKBest(chi2, k=k)
@@ -275,7 +260,7 @@ class a2:
         model = tf.keras.Sequential([
             tf.keras.layers.Dense(64, activation='relu', input_shape=(X_train_selected.shape[1],)),
             tf.keras.layers.Dense(32, activation='relu'),
-            tf.keras.layers.Dense(1, activation='sigmoid')  # Sigmoid activation fn
+            tf.keras.layers.Dense(1, activation='sigmoid')
         ])
 
         # Defining the optimizer with a learning rate of 0.01

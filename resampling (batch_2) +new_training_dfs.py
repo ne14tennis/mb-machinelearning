@@ -71,58 +71,60 @@ class a2:
         # Fitting
         log = LogisticRegression(random_state=77, max_iter=1000)
         log.fit(X_train_ros, y_train_ros)
-        # Predicting
-        log_y_pred = log.predict(X_test)
+
+        # Predicting (on val)
+        log_y_pred = log.predict(X_val)
         # Prediction Performance Metrics
-        accuracy = accuracy_score(y_test, log_y_pred)
+        accuracy = round(accuracy_score(y_val, log_y_pred), 5)
         print("Accuracy:", accuracy)
-        f1 = f1_score(y_test, log_y_pred)
-        precision = precision_score(y_test, log_y_pred)
-        recall = recall_score(y_test, log_y_pred)
+        f1 = round(f1_score(y_val, log_y_pred), 5)
+        precision = round(precision_score(y_val, log_y_pred), 5)
+        recall = round(recall_score(y_val, log_y_pred), 5)
         print("Confusion Matrix:")
-        print(confusion_matrix(y_test, log_y_pred))
+        print(confusion_matrix(y_val, log_y_pred))
         print("Precision:", precision)
         print("Recall:", recall)
         print("F1 Score:", f1)
         print("ROS - lOG REG")
 
-        # Decesion Tree
+        # Decision Tree
 
         # Model Fitting
         dt = DecisionTreeClassifier(random_state=42)
         dt.fit(X_train_ros, y_train_ros)
 
-        # Predicting
-        y_pred = dt.predict(X_test)
-        accuracy = accuracy_score(y_test, y_pred)
+        # Predicting on val
+        y_pred = dt.predict(X_val)
+
+        # Performance metrics
+        accuracy = round(accuracy_score(y_val, y_pred), 5)
         print("Accuracy:", accuracy)
-        f1 = f1_score(y_test, y_pred)
-        precision = precision_score(y_test, y_pred)
-        recall = recall_score(y_test, y_pred)
+        f1 = round(f1_score(y_val, y_pred), 5)
+        precision = round(precision_score(y_val, y_pred), 5)
+        recall = round(recall_score(y_val, y_pred), 5)
         print("Confusion Matrix:")
-        print(confusion_matrix(y_test, y_pred))
+        print(confusion_matrix(y_val, y_pred))
         print("Precision:", precision)
         print("Recall:", recall)
         print("F1 Score:", f1)
         print("ROS - Dt")
 
-        # Random forest
-
+        # Random Forest
         # Fitting
         rf = RandomForestClassifier(n_estimators=100, random_state=42)
         rf.fit(X_train_ros, y_train_ros)
 
-        # Predicting
-        y_pred = rf.predict(X_test)
+        # Predicting (on val)
+        y_pred = rf.predict(X_val)
 
         # Prediction Metrics
-        accuracy = accuracy_score(y_test, y_pred)
+        accuracy = round(accuracy_score(y_val, y_pred), 5)
         print("Accuracy:", accuracy)
-        f1 = f1_score(y_test, y_pred)
-        precision = precision_score(y_test, y_pred)
-        recall = recall_score(y_test, y_pred)
+        f1 = round(f1_score(y_val, y_pred), 5)
+        precision = round(precision_score(y_val, y_pred), 5)
+        recall = round(recall_score(y_val, y_pred), 5)
         print("Confusion Matrix:")
-        print(confusion_matrix(y_test, y_pred))
+        print(confusion_matrix(y_val, y_pred))
         print("Precision:", precision)
         print("Recall:", recall)
         print("F1 Score:", f1)
@@ -132,16 +134,18 @@ class a2:
         # Fitting
         xgb_classifier = xgb.XGBClassifier()
         xgb_classifier.fit(X_train_ros, y_train_ros)
-        # Predicting
-        y_pred = xgb_classifier.predict(X_test)
+
+        # Predicting (on val)
+        y_pred = xgb_classifier.predict(X_val)
+
         # Prediction Performance Metrics
-        accuracy = accuracy_score(y_test, y_pred)
+        accuracy = round(accuracy_score(y_val, y_pred), 5)
         print("Accuracy:", accuracy)
-        f1 = f1_score(y_test, y_pred)
-        precision = precision_score(y_test, y_pred)
-        recall = recall_score(y_test, y_pred)
+        f1 = round(f1_score(y_val, y_pred), 5)
+        precision = round(precision_score(y_val, y_pred), 5)
+        recall = round(recall_score(y_val, y_pred), 5)
         print("Confusion Matrix:")
-        print(confusion_matrix(y_test, y_pred))
+        print(confusion_matrix(y_val, y_pred))
         print("Precision:", precision)
         print("F1 score:", f1)
         print("Recall:", recall)
@@ -151,6 +155,7 @@ class a2:
         # MLP
         # Set random seed
         tf.random.set_seed(42)
+        np.random.seed(42)
 
         # Model architecture
         model = tf.keras.Sequential([
@@ -162,32 +167,34 @@ class a2:
         # Defining the optimizer with a learning rate of 0.01
         optimizer = tf.keras.optimizers.SGD(learning_rate=0.01)
 
-        # Compiling the model with binary cross-entropy loss and Binary_Accuracy as the metric
+        # Compiling the model with binary cross-entropy loss and metrics
         model.compile(loss='binary_crossentropy', optimizer=optimizer,
                       metrics=[tf.keras.metrics.BinaryAccuracy(), tf.keras.metrics.Precision(),
-                               tf.keras.metrics.Recall()])
+                               tf.keras.metrics.Recall(), tf.keras.metrics.Accuracy()])
 
         # Train the model
-        history = model.fit(X_train_ros, y_train_ros, epochs=50, batch_size=36, validation_data=(X_val, y_val), verbose=2)
+        history = model.fit(X_train_ros, y_train_ros, epochs=50, batch_size=36, validation_data=(X_val, y_val),
+                            verbose=2)
 
-        # Evaluate the model on the test set
-        loss, binary_accuracy, precision, recall = model.evaluate(X_test, y_test)
-        print("Binary Cross-Entropy Loss:", loss)
-        print("Binary Accuracy on test set:", binary_accuracy)
-        print("Precision on test set:", precision)
-        print("Recall on test set:", recall)
+        # Evaluate the model on the validation set
+        loss, binary_accuracy, precision, recall, accuracy = model.evaluate(X_val, y_val)
+        print("Binary Cross-Entropy Loss:", round(loss, 5))
+        print("Binary Accuracy on validation set:", round(binary_accuracy, 5))
+        print("Precision on validation set:", round(precision, 5))
+        print("Recall on validation set:", round(recall, 5))
+        print("Accuracy on validation set:", round(accuracy, 5))
 
-        # Make predictions on the test set
-        binary_preds = model.predict(X_test)
+        # Make predictions on the validation set
+        binary_preds = model.predict(X_val)
         # Round the predictions to get the binary class labels (0 or 1)
         binary_preds_rounded = [1 if pred > 0.5 else 0 for pred in binary_preds]
 
         # Calculate F1-score for binary classification
-        f1 = f1_score(y_test, binary_preds_rounded)
+        f1 = f1_score(y_val, binary_preds_rounded)
         print("Confusion Matrix:")
-        print(confusion_matrix(y_test, binary_preds_rounded))
-        print("F1-score: {:.2f}".format(f1))
-        print("F1-score: {:.2f}".format(f1))
+        print(confusion_matrix(y_val, binary_preds_rounded))
+        print("F1-score: {:.5f}".format(f1))
+        print("ROS- MLP")
 
         # SMOTHE
         smote = SMOTE(random_state=42)
@@ -200,82 +207,92 @@ class a2:
         # Fitting
         log = LogisticRegression(random_state=77, max_iter=1000)
         log.fit(X_train_sm, y_train_sm)
-        # Predicting
-        log_y_pred = log.predict(X_test)
+
+        # Predicting (on val)
+        log_y_pred = log.predict(X_val)
+
         # Prediction Performance Metrics
-        accuracy = accuracy_score(y_test, log_y_pred)
+        accuracy = round(accuracy_score(y_val, log_y_pred), 5)
         print("Accuracy:", accuracy)
-        f1 = f1_score(y_test, log_y_pred)
-        precision = precision_score(y_test, log_y_pred)
-        recall = recall_score(y_test, log_y_pred)
+        f1 = round(f1_score(y_val, log_y_pred), 5)
+        precision = round(precision_score(y_val, log_y_pred), 5)
+        recall = round(recall_score(y_val, log_y_pred), 5)
         print("Confusion Matrix:")
-        print(confusion_matrix(y_test, log_y_pred))
+        print(confusion_matrix(y_val, log_y_pred))
         print("Precision:", precision)
         print("Recall:", recall)
         print("F1 Score:", f1)
         print("SMOTHE - lOG REG")
 
         # Decision Tree
+
         # Model Fitting
         dt = DecisionTreeClassifier(random_state=42)
         dt.fit(X_train_sm, y_train_sm)
 
-        # Predicting
-        y_pred = dt.predict(X_test)
-        accuracy = accuracy_score(y_test, y_pred)
+        # Predicting on val
+        y_pred = dt.predict(X_val)
+
+        # Performance Metrics
+        accuracy = round(accuracy_score(y_val, y_pred), 5)
         print("Accuracy:", accuracy)
-        f1 = f1_score(y_test, y_pred)
-        precision = precision_score(y_test, y_pred)
-        recall = recall_score(y_test, y_pred)
+        f1 = round(f1_score(y_val, y_pred), 5)
+        precision = round(precision_score(y_val, y_pred), 5)
+        recall = round(recall_score(y_val, y_pred), 5)
         print("Confusion Matrix:")
-        print(confusion_matrix(y_test, y_pred))
+        print(confusion_matrix(y_val, y_pred))
         print("Precision:", precision)
         print("Recall:", recall)
         print("F1 Score:", f1)
         print("SMOTHE - Dt")
-        # Random forest
 
+        # Random Forest
         # Fitting
         rf = RandomForestClassifier(n_estimators=100, random_state=42)
         rf.fit(X_train_sm, y_train_sm)
 
-        # Predicting
-        y_pred = rf.predict(X_test)
+        # Predicting (on val)
+        y_pred = rf.predict(X_val)
 
         # Prediction Metrics
-        accuracy = accuracy_score(y_test, y_pred)
+        accuracy = round(accuracy_score(y_val, y_pred), 5)
         print("Accuracy:", accuracy)
-        f1 = f1_score(y_test, y_pred)
-        precision = precision_score(y_test, y_pred)
-        recall = recall_score(y_test, y_pred)
+        f1 = round(f1_score(y_val, y_pred), 5)
+        precision = round(precision_score(y_val, y_pred), 5)
+        recall = round(recall_score(y_val, y_pred), 5)
         print("Confusion Matrix:")
-        print(confusion_matrix(y_test, y_pred))
+        print(confusion_matrix(y_val, y_pred))
         print("Precision:", precision)
         print("Recall:", recall)
         print("F1 Score:", f1)
-        print("RUS - rf")
+        print("SMOTHE - rf")
 
         # XG Boost
         # Fitting
         xgb_classifier = xgb.XGBClassifier()
         xgb_classifier.fit(X_train_sm, y_train_sm)
-        # Predicting
-        y_pred = xgb_classifier.predict(X_test)
+
+        # Predicting (on val)
+        y_pred = xgb_classifier.predict(X_val)
+
         # Prediction Performance Metrics
-        accuracy = accuracy_score(y_test, y_pred)
+        accuracy = round(accuracy_score(y_val, y_pred), 5)
         print("Accuracy:", accuracy)
-        f1 = f1_score(y_test, y_pred)
-        precision = precision_score(y_test, y_pred)
-        recall = recall_score(y_test, y_pred)
+        f1 = round(f1_score(y_val, y_pred), 5)
+        precision = round(precision_score(y_val, y_pred), 5)
+        recall = round(recall_score(y_val, y_pred), 5)
         print("Confusion Matrix:")
-        print(confusion_matrix(y_test, y_pred))
+        print(confusion_matrix(y_val, y_pred))
         print("Precision:", precision)
         print("F1 score:", f1)
         print("Recall:", recall)
 
-        print("RUS - XG Boost")
+        print("SMOTHE - XG Boost")
         # MLP
+        # Set random seed
+        # Set random seed
         tf.random.set_seed(42)
+        np.random.seed(42)
 
         # Model architecture
         model = tf.keras.Sequential([
@@ -287,32 +304,34 @@ class a2:
         # Defining the optimizer with a learning rate of 0.01
         optimizer = tf.keras.optimizers.SGD(learning_rate=0.01)
 
-        # Compiling the model with binary cross-entropy loss and Binary_Accuracy as the metric
+        # Compiling the model with binary cross-entropy loss and metrics
         model.compile(loss='binary_crossentropy', optimizer=optimizer,
                       metrics=[tf.keras.metrics.BinaryAccuracy(), tf.keras.metrics.Precision(),
-                               tf.keras.metrics.Recall()])
+                               tf.keras.metrics.Recall(), tf.keras.metrics.Accuracy()])
 
         # Train the model
         history = model.fit(X_train_sm, y_train_sm, epochs=50, batch_size=36, validation_data=(X_val, y_val), verbose=2)
 
-        # Evaluate the model on the test set
-        loss, binary_accuracy, precision, recall = model.evaluate(X_test, y_test)
-        print("Binary Cross-Entropy Loss:", loss)
-        print("Binary Accuracy on test set:", binary_accuracy)
-        print("Precision on test set:", precision)
-        print("Recall on test set:", recall)
+        # Evaluate the model on the validation set
+        loss, binary_accuracy, precision, recall, accuracy = model.evaluate(X_val, y_val)
+        print("Binary Cross-Entropy Loss:", round(loss, 5))
+        print("Binary Accuracy on validation set:", round(binary_accuracy, 5))
+        print("Precision on validation set:", round(precision, 5))
+        print("Recall on validation set:", round(recall, 5))
+        print("Accuracy on validation set:", round(accuracy, 5))
 
-        # Make predictions on the test set
-        binary_preds = model.predict(X_test)
+        # Make predictions on the validation set
+        binary_preds = model.predict(X_val)
         # Round the predictions to get the binary class labels (0 or 1)
         binary_preds_rounded = [1 if pred > 0.5 else 0 for pred in binary_preds]
 
         # Calculate F1-score for binary classification
-        f1 = f1_score(y_test, binary_preds_rounded)
+        f1 = f1_score(y_val, binary_preds_rounded)
         print("Confusion Matrix:")
-        print(confusion_matrix(y_test, binary_preds_rounded))
-        print("F1-score: {:.2f}".format(f1))
-        print("F1-score: {:.2f}".format(f1))
+        print(confusion_matrix(y_val, binary_preds_rounded))
+        print("F1-score: {:.5f}".format(f1))
+        print("SMOTHE- MLP")
+
         # Random Under-sampling
 
         # Seperating majority and minority classes after concatination
@@ -334,60 +353,64 @@ class a2:
         X_train_rus = n_df.drop(['watched'], axis=1)
         y_train_rus = n_df['watched']
         print("RUS conducted")
-        # Logistic Regression
         # Fitting
-        log = LogisticRegression(random_state=77, max_iter=1000)
-        log.fit(X_train_rus, y_train_rus)
-        # Predicting
-        y_pred_log = log.predict(X_test)
+        log_rus = LogisticRegression(random_state=77, max_iter=1000)
+        log_rus.fit(X_train_rus, y_train_rus)
+
+        # Predicting (on val)
+        y_pred_log = log_rus.predict(X_val)
+
         # Prediction Performance Metrics
-        accuracy = accuracy_score(y_test, y_pred_log)
+        accuracy = round(accuracy_score(y_val, y_pred_log), 5)
         print("Accuracy:", accuracy)
-        f1 = f1_score(y_test, y_pred_log)
-        precision = precision_score(y_test, y_pred_log)
-        recall = recall_score(y_test, y_pred_log)
+        f1 = round(f1_score(y_val, y_pred_log), 5)
+        precision = round(precision_score(y_val, y_pred_log), 5)
+        recall = round(recall_score(y_val, y_pred_log), 5)
         print("Confusion Matrix:")
-        print(confusion_matrix(y_test, y_pred_log))
+        print(confusion_matrix(y_val, y_pred_log))
         print("Precision:", precision)
         print("Recall:", recall)
         print("F1 Score:", f1)
         print("RUS - lOG REG")
 
         # Decision Tree
-        # Model Fitting
-        dt = DecisionTreeClassifier(random_state=42)
-        dt.fit(X_train_rus, y_train_rus)
 
-        # Predicting
-        y_pred_dt = dt.predict(X_test)
-        accuracy = accuracy_score(y_test, y_pred_dt)
+        # Model Fitting
+        dt_rus = DecisionTreeClassifier(random_state=42)
+        dt_rus.fit(X_train_rus, y_train_rus)
+
+        # Predicting on val
+        y_pred_dt = dt_rus.predict(X_val)
+
+        # Performance Metrics
+        accuracy = round(accuracy_score(y_val, y_pred_dt), 5)
         print("Accuracy:", accuracy)
-        f1 = f1_score(y_test, y_pred_dt)
-        precision = precision_score(y_test, y_pred_dt)
-        recall = recall_score(y_test, y_pred_dt)
+        f1 = round(f1_score(y_val, y_pred_dt), 5)
+        precision = round(precision_score(y_val, y_pred_dt), 5)
+        recall = round(recall_score(y_val, y_pred_dt), 5)
         print("Confusion Matrix:")
-        print(confusion_matrix(y_test, y_pred_dt))
+        print(confusion_matrix(y_val, y_pred_dt))
         print("Precision:", precision)
         print("Recall:", recall)
         print("F1 Score:", f1)
         print("RUS - Dt")
-        # Random forest
 
+        # Random Forest
         # Fitting
-        rf = RandomForestClassifier(n_estimators=100, random_state=42)
-        rf.fit(X_train_rus, y_train_rus)
+        rf_rus = RandomForestClassifier(n_estimators=100, random_state=42)
+        rf_rus.fit(X_train_rus, y_train_rus)
 
-        # Predicting
-        y_pred_rf = rf.predict(X_test)
+        # Predicting (on val)
+        y_pred = rf_rus.predict(X_val)
 
         # Prediction Metrics
-        accuracy = accuracy_score(y_test, y_pred_rf)
+        accuracy = round(accuracy_score(y_val, y_pred), 5)
         print("Accuracy:", accuracy)
-        f1 = f1_score(y_test, y_pred_rf)
-        precision = precision_score(y_test, y_pred_rf)
-        recall = recall_score(y_test, y_pred_rf)
+        f1 = round(f1_score(y_val, y_pred), 5)
+        precision = round(precision_score(y_val, y_pred), 5)
+        recall = round(recall_score(y_val, y_pred), 5)
         print("Confusion Matrix:")
-        print(confusion_matrix(y_test, y_pred_rf))
+        print(confusion_matrix(y_val, y_pred))
         print("Precision:", precision)
         print("Recall:", recall)
         print("F1 Score:", f1)
@@ -395,64 +418,69 @@ class a2:
 
         # XG Boost
         # Fitting
-        xgb_classifier = xgb.XGBClassifier()
-        xgb_classifier.fit(X_train_rus, y_train_rus)
-        # Predicting
-        y_pred_xg = xgb_classifier.predict(X_test)
+        xgb_classifier_rus = xgb.XGBClassifier()
+        xgb_classifier_rus.fit(X_train_rus, y_train_rus)
+
+        # Predicting (on val)
+        y_pred = xgb_classifier_rus.predict(X_val)
+
         # Prediction Performance Metrics
-        accuracy = accuracy_score(y_test, y_pred_xg)
+        accuracy = round(accuracy_score(y_val, y_pred), 5)
         print("Accuracy:", accuracy)
-        f1 = f1_score(y_test, y_pred_xg)
-        precision = precision_score(y_test, y_pred_xg)
-        recall = recall_score(y_test, y_pred_xg)
+        f1 = round(f1_score(y_val, y_pred), 5)
+        precision = round(precision_score(y_val, y_pred), 5)
+        recall = round(recall_score(y_val, y_pred), 5)
         print("Confusion Matrix:")
-        print(confusion_matrix(y_test, y_pred_xg))
+        print(confusion_matrix(y_val, y_pred))
         print("Precision:", precision)
         print("F1 score:", f1)
         print("Recall:", recall)
 
         print("RUS - XG Boost")
-
         # MLP
+        # Set random seed
+        # Set random seed
         tf.random.set_seed(42)
+        np.random.seed(42)
 
         # Model architecture
-        model = tf.keras.Sequential([
+        model_rus = tf.keras.Sequential([
             tf.keras.layers.Dense(64, activation='relu', input_shape=(X_train_rus.shape[1],)),
             tf.keras.layers.Dense(32, activation='relu'),
-            tf.keras.layers.Dense(1, activation='sigmoid')  # Sigmoid activation fn
+            tf.keras.layers.Dense(1, activation='sigmoid')
         ])
 
         # Defining the optimizer with a learning rate of 0.01
         optimizer = tf.keras.optimizers.SGD(learning_rate=0.01)
 
-        # Compiling the model with binary cross-entropy loss and Binary_Accuracy as the metric
-        model.compile(loss='binary_crossentropy', optimizer=optimizer,
-                      metrics=[tf.keras.metrics.BinaryAccuracy(), tf.keras.metrics.Precision(),
-                               tf.keras.metrics.Recall()])
+        # Compiling the model with binary cross-entropy loss and metrics
+        model_rus.compile(loss='binary_crossentropy', optimizer=optimizer,
+                          metrics=[tf.keras.metrics.BinaryAccuracy(), tf.keras.metrics.Precision(),
+                                   tf.keras.metrics.Recall(), tf.keras.metrics.Accuracy()])
 
         # Train the model
-        history = model.fit(X_train_rus, y_train_rus, epochs=50, batch_size=36, validation_data=(X_val, y_val), verbose=2)
+        history = model_rus.fit(X_train_rus, y_train_rus, epochs=50, batch_size=36, validation_data=(X_val, y_val),
+                                verbose=2)
 
-        # Evaluate the model on the test set
-        loss, binary_accuracy, precision, recall = model.evaluate(X_test, y_test)
-        print("Binary Cross-Entropy Loss:", loss)
-        print("Binary Accuracy on test set:", binary_accuracy)
-        print("Precision on test set:", precision)
-        print("Recall on test set:", recall)
+        # Evaluate the model on the validation set
+        loss, binary_accuracy, precision, recall, accuracy = model_rus.evaluate(X_val, y_val)
+        print("Binary Cross-Entropy Loss:", round(loss, 5))
+        print("Binary Accuracy on validation set:", round(binary_accuracy, 5))
+        print("Precision on validation set:", round(precision, 5))
+        print("Recall on validation set:", round(recall, 5))
+        print("Accuracy on validation set:", round(accuracy, 5))
 
-        # Make predictions on the test set
-        binary_preds = model.predict(X_test)
+        # Make predictions on the validation set
+        binary_preds = model_rus.predict(X_val)
         # Round the predictions to get the binary class labels (0 or 1)
-        y_pred_MLP = [1 if pred > 0.5 else 0 for pred in binary_preds]
+        binary_preds_rounded = [1 if pred > 0.5 else 0 for pred in binary_preds]
 
         # Calculate F1-score for binary classification
-        f1 = f1_score(y_test, y_pred_MLP)
+        f1 = f1_score(y_val, binary_preds_rounded)
         print("Confusion Matrix:")
-        print(confusion_matrix(y_test, y_pred_MLP))
-        print("F1-score: {:.2f}".format(f1))
-        print("F1-score: {:.2f}".format(f1))
-
+        print(confusion_matrix(y_val, binary_preds_rounded))
+        print("F1-score: {:.5f}".format(f1))
+        print("RUS- MLP")
         # Combining ROS and RUS
 
         # oversampling minority to increase it from 48.16% to 65% of majority class
@@ -484,88 +512,96 @@ class a2:
         y_train_comb = c_df['watched']
 
         print("Comb training sets created")
-        # Logistic Regression
 
         # Fitting
         log = LogisticRegression(random_state=77, max_iter=1000)
         log.fit(X_train_comb, y_train_comb)
-        # Predicting
-        log_y_pred = log.predict(X_test)
+
+        # Predicting (on val)
+        log_y_pred = log.predict(X_val)
+
         # Prediction Performance Metrics
-        accuracy = accuracy_score(y_test, log_y_pred)
+        accuracy = round(accuracy_score(y_val, log_y_pred), 5)
         print("Accuracy:", accuracy)
-        f1 = f1_score(y_test, log_y_pred)
-        precision = precision_score(y_test, log_y_pred)
-        recall = recall_score(y_test, log_y_pred)
+        f1 = round(f1_score(y_val, log_y_pred), 5)
+        precision = round(precision_score(y_val, log_y_pred), 5)
+        recall = round(recall_score(y_val, log_y_pred), 5)
         print("Confusion Matrix:")
-        print(confusion_matrix(y_test, log_y_pred))
+        print(confusion_matrix(y_val, log_y_pred))
         print("Precision:", precision)
         print("Recall:", recall)
         print("F1 Score:", f1)
-        print("RUS/ROS - lOG REG")
+        print("Comb - lOG REG")
 
         # Decision Tree
+
         # Model Fitting
         dt = DecisionTreeClassifier(random_state=42)
         dt.fit(X_train_comb, y_train_comb)
 
-        # Predicting
-        y_pred = dt.predict(X_test)
-        accuracy = accuracy_score(y_test, y_pred)
+        # Predicting on val
+        y_pred = dt.predict(X_val)
+
+        # Performance Metrics
+        accuracy = round(accuracy_score(y_val, y_pred), 5)
         print("Accuracy:", accuracy)
-        f1 = f1_score(y_test, y_pred)
-        precision = precision_score(y_test, y_pred)
-        recall = recall_score(y_test, y_pred)
+        f1 = round(f1_score(y_val, y_pred), 5)
+        precision = round(precision_score(y_val, y_pred), 5)
+        recall = round(recall_score(y_val, y_pred), 5)
         print("Confusion Matrix:")
-        print(confusion_matrix(y_test, y_pred))
+        print(confusion_matrix(y_val, y_pred))
         print("Precision:", precision)
         print("Recall:", recall)
         print("F1 Score:", f1)
-        print("RUS/ROS - Dt")
-        # Random forest
+        print("Comb - Dt")
 
+        # Random Forest
         # Fitting
         rf = RandomForestClassifier(n_estimators=100, random_state=42)
         rf.fit(X_train_comb, y_train_comb)
 
-        # Predicting
-        y_pred = rf.predict(X_test)
+        # Predicting (on val)
+        y_pred = rf.predict(X_val)
 
         # Prediction Metrics
-        accuracy = accuracy_score(y_test, y_pred)
+        accuracy = round(accuracy_score(y_val, y_pred), 5)
         print("Accuracy:", accuracy)
-        f1 = f1_score(y_test, y_pred)
-        precision = precision_score(y_test, y_pred)
-        recall = recall_score(y_test, y_pred)
+        f1 = round(f1_score(y_val, y_pred), 5)
+        precision = round(precision_score(y_val, y_pred), 5)
+        recall = round(recall_score(y_val, y_pred), 5)
         print("Confusion Matrix:")
-        print(confusion_matrix(y_test, y_pred))
+        print(confusion_matrix(y_val, y_pred))
         print("Precision:", precision)
         print("Recall:", recall)
         print("F1 Score:", f1)
-        print("RUS/ROS - rf")
+        print("Comb - rf")
 
         # XG Boost
         # Fitting
         xgb_classifier = xgb.XGBClassifier()
         xgb_classifier.fit(X_train_comb, y_train_comb)
-        # Predicting
-        y_pred = xgb_classifier.predict(X_test)
+
+        # Predicting (on val)
+        y_pred = xgb_classifier.predict(X_val)
+
         # Prediction Performance Metrics
-        accuracy = accuracy_score(y_test, y_pred)
+        accuracy = round(accuracy_score(y_val, y_pred), 5)
         print("Accuracy:", accuracy)
-        f1 = f1_score(y_test, y_pred)
-        precision = precision_score(y_test, y_pred)
-        recall = recall_score(y_test, y_pred)
+        f1 = round(f1_score(y_val, y_pred), 5)
+        precision = round(precision_score(y_val, y_pred), 5)
+        recall = round(recall_score(y_val, y_pred), 5)
         print("Confusion Matrix:")
-        print(confusion_matrix(y_test, y_pred))
+        print(confusion_matrix(y_val, y_pred))
         print("Precision:", precision)
         print("F1 score:", f1)
         print("Recall:", recall)
 
-        print("RUS/ROS - XG Boost")
-
+        print("Comb - XG Boost")
         # MLP
+        # Set random seed
+        # Set random seed
         tf.random.set_seed(42)
+        np.random.seed(42)
 
         # Model architecture
         model = tf.keras.Sequential([
@@ -577,35 +613,43 @@ class a2:
         # Defining the optimizer with a learning rate of 0.01
         optimizer = tf.keras.optimizers.SGD(learning_rate=0.01)
 
-        # Compiling the model with binary cross-entropy loss and Binary_Accuracy as the metric
+        # Compiling the model with binary cross-entropy loss and metrics
         model.compile(loss='binary_crossentropy', optimizer=optimizer,
                       metrics=[tf.keras.metrics.BinaryAccuracy(), tf.keras.metrics.Precision(),
-                               tf.keras.metrics.Recall()])
+                               tf.keras.metrics.Recall(), tf.keras.metrics.Accuracy()])
 
         # Train the model
-        history = model.fit(X_train_comb, y_train_comb, epochs=50, batch_size=36, validation_data=(X_val, y_val), verbose=2)
+        history = model.fit(X_train_comb, y_train_comb, epochs=50, batch_size=36, validation_data=(X_val, y_val),
+                            verbose=2)
 
-        # Evaluate the model on the test set
-        loss, binary_accuracy, precision, recall = model.evaluate(X_test, y_test)
-        print("Binary Cross-Entropy Loss:", loss)
-        print("Binary Accuracy on test set:", binary_accuracy)
-        print("Precision on test set:", precision)
-        print("Recall on test set:", recall)
+        # Evaluate the model on the validation set
+        loss, binary_accuracy, precision, recall, accuracy = model.evaluate(X_val, y_val)
+        print("Binary Cross-Entropy Loss:", round(loss, 5))
+        print("Binary Accuracy on validation set:", round(binary_accuracy, 5))
+        print("Precision on validation set:", round(precision, 5))
+        print("Recall on validation set:", round(recall, 5))
+        print("Accuracy on validation set:", round(accuracy, 5))
 
-        # Make predictions on the test set
-        binary_preds = model.predict(X_test)
+        # Make predictions on the validation set
+        binary_preds = model.predict(X_val)
         # Round the predictions to get the binary class labels (0 or 1)
         binary_preds_rounded = [1 if pred > 0.5 else 0 for pred in binary_preds]
 
         # Calculate F1-score for binary classification
-        f1 = f1_score(y_test, binary_preds_rounded)
+        f1 = f1_score(y_val, binary_preds_rounded)
         print("Confusion Matrix:")
-        print(confusion_matrix(y_test, binary_preds_rounded))
-        print("F1-score: {:.2f}".format(f1))
-        print("F1-score: {:.2f}".format(f1))
+        print(confusion_matrix(y_val, binary_preds_rounded))
+        print("F1-score: {:.5f}".format(f1))
+        print("Comb- MLP")
         # Best model for voting classifier------RUS
-        # Best model for only MLP------Comb: RUS/ROS
 
+        # Performance of slected resampling method (rus through validation comparison)
+        y_pred_log_rus = log_rus.predict(X_test)
+        y_pred_dt_rus = dt_rus.predict(X_test)
+        y_pred_rf_rus = rf_rus.predict(X_test)
+        y_pred_xg_rus = xgb_classifier_rus.predict(X_test)
+        y_pred_MLP_rus = model_rus.predict(X_test)
+        y_pred_MLP_rus = [1 if pred > 0.5 else 0 for pred in y_pred_MLP_rus]
         # Selected training data- RUS
 
         # Comparing Models through confusion matrix heatmap
@@ -613,37 +657,45 @@ class a2:
 
         # Log Regression model
         plt.subplot(2, 3, 1)
-        sns.heatmap(confusion_matrix(y_test, y_pred_log) / np.sum(confusion_matrix(y_test, y_pred_log)), annot=True,
+        sns.heatmap(confusion_matrix(y_test, y_pred_log_rus) / np.sum(confusion_matrix(y_test, y_pred_log_rus)),
+                    annot=True,
                     fmt='.2%', cmap='Blues')
         plt.title('Logistic')
 
         # Decision Tree confusion matrix heatmap
         plt.subplot(2, 3, 2)
-        sns.heatmap(confusion_matrix(y_test, y_pred_dt) / np.sum(confusion_matrix(y_test, y_pred_dt)), annot=True,
+        sns.heatmap(confusion_matrix(y_test, y_pred_dt_rus) / np.sum(confusion_matrix(y_test, y_pred_dt_rus)),
+                    annot=True,
                     fmt='.2%', cmap='Blues')
         plt.title('Decision Tree')
 
         # Random Forest
         plt.subplot(2, 3, 3)
-        sns.heatmap(confusion_matrix(y_test, y_pred_rf) / np.sum(confusion_matrix(y_test, y_pred_rf)), annot=True,
+        sns.heatmap(confusion_matrix(y_test, y_pred_rf_rus) / np.sum(confusion_matrix(y_test, y_pred_rf_rus)),
+                    annot=True,
                     fmt='.2%', cmap='Blues')
         plt.title('Random Forest')
 
         # XGBoost
         plt.subplot(2, 3, 4)
-        sns.heatmap(confusion_matrix(y_test, y_pred_xg) / np.sum(confusion_matrix(y_test, y_pred_xg)), annot=True,
+        sns.heatmap(confusion_matrix(y_test, y_pred_xg_rus) / np.sum(confusion_matrix(y_test, y_pred_xg_rus)),
+                    annot=True,
                     fmt='.2%', cmap='Blues')
         plt.title('XGBoost')
 
         # MLP
         plt.subplot(2, 3, 5)
-        sns.heatmap(confusion_matrix(y_test, y_pred_MLP) / np.sum(confusion_matrix(y_test, y_pred_MLP)), annot=True,
+        sns.heatmap(confusion_matrix(y_test, y_pred_MLP_rus) / np.sum(confusion_matrix(y_test, y_pred_MLP_rus)),
+                    annot=True,
                     fmt='.2%', cmap='Blues')
         plt.title('MLP')
 
         plt.show();
         print("Confusion Matrix")
-        # Saving the rus training data as X_train_nw , y_train_nw
+
+        print("Confusion Matrix")
+    # Saving the rus training data as X_train_nw , y_train_nw
+
         doggo = PandasDoggo()
         X_train_nw = pd.DataFrame(X_train_rus)
         path = "s3://csmediabrain-mediabrain/prod_mb/data_source/machine_learning_data/X_train_nw.csv"
