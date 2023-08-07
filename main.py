@@ -11,6 +11,7 @@ from aws_to_df import AwsToDf
 
 # Libraries for Plots/Data Visualisations
 import matplotlib.pyplot as plt
+from matplotlib import pyplot
 import seaborn as sns
 
 # Libraries for Modelling
@@ -19,6 +20,7 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
 import xgboost as xgb
 from xgboost import XGBClassifier
+
 # MLP
 import tensorflow as tf
 from sklearn.neural_network import MLPClassifier
@@ -29,10 +31,11 @@ from sklearn.metrics import make_scorer, f1_score
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import precision_score, recall_score
 
-# Re-sampling
-from imblearn.over_sampling import RandomOverSampler
-from imblearn.over_sampling import SMOTE
-from sklearn.utils import shuffle
+# Cross Val
+from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import RepeatedStratifiedKFold
+from numpy import mean
+from numpy import std
 
 # Tuning
 from sklearn.model_selection import GridSearchCV
@@ -41,27 +44,98 @@ def run_program(main):
     atd = AwsToDf()
     X_train = atd.files_to_df('prod_mb/data_source/machine_learning_data', 'X_train_nw.csv', 'csv', has_header=True)
     X_val = atd.files_to_df('prod_mb/data_source/machine_learning_data', 'X_val.csv', 'csv', has_header=True)
-
-    # X_test = atd.files_to_df('prod_mb/data_source/machine_learning_data', 'X_test.csv', 'csv', has_header=True)
+    X_test = atd.files_to_df('prod_mb/data_source/machine_learning_data', 'X_test.csv', 'csv', has_header=True)
 
     y_train = atd.files_to_df('prod_mb/data_source/machine_learning_data', 'y_train_nw.csv', 'csv', has_header=True)
-
-    #y_test = atd.files_to_df('prod_mb/data_source/machine_learning_data', 'y_test.csv', 'csv', has_header=True)
-
+    y_test = atd.files_to_df('prod_mb/data_source/machine_learning_data', 'y_test.csv', 'csv', has_header=True)
     y_val = atd.files_to_df('prod_mb/data_source/machine_learning_data', 'y_val.csv', 'csv', has_header=True)
 
     print("Re-sampled data loaded")
 # Dropping Un-named
     X_train = X_train.drop(['Unnamed: 0'], axis=1)
     y_train = y_train.drop(['Unnamed: 0'], axis=1)
-    """
+
     X_test = X_test.drop(['Unnamed: 0'], axis=1)
     y_test = y_test.drop(['Unnamed: 0'], axis=1)
-    """
+
     X_val = X_val.drop(['Unnamed: 0'], axis=1)
     y_val = y_val.drop(["Unnamed: 0"], axis = 1)
 
     print(X_train.columns)
+    # K-fold Cross Validation
+
+    # MLP
+    tf.random.set_seed(42)
+    np.random.seed(42)
+
+    # Model architecture
+    model = tf.keras.Sequential([
+        tf.keras.layers.Dense(64, activation='relu', input_shape=(X_train.shape[1],)),
+        tf.keras.layers.Dense(32, activation='relu'),
+        tf.keras.layers.Dense(1, activation='sigmoid')
+    ])
+
+    # Defining the optimizer with a learning rate of 0.01
+    optimizer = tf.keras.optimizers.SGD(learning_rate=0.01)
+
+    # Compiling the model with binary cross-entropy loss and metrics
+    model.compile(loss='binary_crossentropy', optimizer=optimizer,
+                  metrics=[tf.keras.metrics.BinaryAccuracy(), tf.keras.metrics.Precision(),
+                           tf.keras.metrics.Recall(), tf.keras.metrics.BinaryCrossentropy()])
+
+    # Train the model
+    history = model.fit(X_train, y_train, epochs=50, batch_size=36, validation_data=(X_val, y_val),
+                        verbose=2)
+    print("MLP model defined")
+    # List of models
+    def get_models():
+        models = dict()
+        models['log'] = LogisticRegression(random_state=77, max_iter=1000)
+        models['dt'] = DecisionTreeClassifier(random_state=42)
+        models['rfc'] = RandomForestClassifier(n_estimators=100, random_state=42)
+        models['xgb'] = XGBClassifier()
+        return models
+
+    # evaluate the Keras model using F1 score
+    def evaluate_keras_model(model, X, Y):
+        y_pred = model.predict(X)
+        y_pred = (y_pred > 0.5).astype(int)
+        f1 = f1_score(Y, y_pred)
+        return f1
+
+    # evaluate a given model using cross-validation
+    def evaluate_model(model, X, Y, metric='f1'):
+        cv = RepeatedStratifiedKFold(n_splits=10, n_repeats=5, random_state=1)
+        scores = cross_val_score(model, X, Y, scoring=metric, cv=cv, n_jobs=-1, error_score='raise')
+        return scores
+
+    # get the models to evaluate
+    models = get_models()
+
+    # evaluate the Keras model
+    keras_f1 = evaluate_keras_model(model, X_train, y_train)
+
+    # evaluate the scikit-learn models and store results
+    results, names = list(), list()
+    metric = 'f1'
+    for name, model in models.items():
+        scores = evaluate_model(model, X_train, y_train, metric=metric)
+        results.append(scores)
+        names.append(name)
+
+    # add the Keras model's F1 score to the results list and names list
+    results.append([keras_f1])
+    names.append('MLP')
+
+    # plot model performance for comparison
+    plt.boxplot(results, labels=names, showmeans=True)
+    plt.title('Model Performance Comparison')
+    plt.ylabel(f'{metric.upper()} Score')
+    plt.show()
+    print("Cross val")
+
+    print("Cross-val")
+
     # Fine-tuning
 
     #XG Boost
@@ -316,8 +390,6 @@ def run_program(main):
     print(confusion_matrix(y_val, binary_preds_rounded))
     print("F1-score: {:.4f}".format(f1))
     print("F1-score: {:.4f}".format(f1))
-
-
 #EPOCH = 100
 
     tf.random.set_seed(42)
@@ -619,7 +691,7 @@ def run_program(main):
     print(confusion_matrix(y_val, binary_preds_rounded))
     print("F1-score: {:.5f}".format(f1))
     print("F1-score: {:.5f}".format(f1))
-    """
+
 # Neurons per layer = 200
     tf.random.set_seed(42)
     np.random.seed(42)
@@ -794,13 +866,15 @@ def run_program(main):
     print(confusion_matrix(y_val, binary_preds_rounded))
     print("F1-score: {:.5f}".format(f1))
     print("F1-score: {:.5f}".format(f1))
-
-
+    
     # Neurons per layer = 100, number of layers = 4
 
     tf.random.set_seed(42)
+    np.random.seed(42)
+    norm_layer = tf.keras.layers.Normalization(input_shape=X_train.shape[1:])
     # Model architecture
     model = tf.keras.Sequential([
+        norm_layer,
         tf.keras.layers.Dense(100, activation='relu', input_shape=(X_train.shape[1],)),
         tf.keras.layers.Dense(100, activation='relu'),
         tf.keras.layers.Dense(100, activation='relu'),
@@ -819,30 +893,33 @@ def run_program(main):
     # Train the model
     history = model.fit(X_train, y_train, epochs=100, batch_size=36, validation_data=(X_val, y_val), verbose=2)
 
-    # Evaluate the model on the test set
-    loss, binary_accuracy, precision, recall = model.evaluate(X_test, y_test)
+    # Evaluate the model on the val set
+    loss, binary_accuracy, precision, recall = model.evaluate(X_val, y_val)
     print("Binary Cross-Entropy Loss:", round(loss, 7))
-    print("Binary Accuracy on test set:", round(binary_accuracy, 7))
-    print("Precision on test set:", round(precision, 7))
-    print("Recall on test set:", round(recall, 7))
+    print("Binary Accuracy on val set:", round(binary_accuracy, 7))
+    print("Precision on val set:", round(precision, 7))
+    print("Recall on val set:", round(recall, 7))
 
-    # Make predictions on the test set
-    binary_preds = model.predict(X_test)
+    # Make predictions on the val set
+    binary_preds = model.predict(X_val)
     # Round the predictions to get the binary class labels (0 or 1)
     binary_preds_rounded = [1 if pred > 0.5 else 0 for pred in binary_preds]
 
     # Calculate F1-score for binary classification
-    f1 = f1_score(y_test, binary_preds_rounded)
+    f1 = f1_score(y_val, binary_preds_rounded)
     print("Confusion Matrix:")
-    print(confusion_matrix(y_test, binary_preds_rounded))
-    print("F1-score: {:.2f}".format(f1))
-    
+    print(confusion_matrix(y_val, binary_preds_rounded))
+    print("F1-score: {:.5f}".format(f1))
+    print("F1-score: {:.5f}".format(f1))
 
     # Neurons per layer = 200, number of layers = 4
 
     tf.random.set_seed(42)
+    np.random.seed(42)
+    norm_layer = tf.keras.layers.Normalization(input_shape=X_train.shape[1:])
     # Model architecture
     model = tf.keras.Sequential([
+        norm_layer,
         tf.keras.layers.Dense(200, activation='relu', input_shape=(X_train.shape[1],)),
         tf.keras.layers.Dense(200, activation='relu'),
         tf.keras.layers.Dense(200, activation='relu'),
@@ -861,30 +938,33 @@ def run_program(main):
     # Train the model
     history = model.fit(X_train, y_train, epochs=100, batch_size=36, validation_data=(X_val, y_val), verbose=2)
 
-    # Evaluate the model on the test set
-    loss, binary_accuracy, precision, recall = model.evaluate(X_test, y_test)
+    # Evaluate the model on the val set
+    loss, binary_accuracy, precision, recall = model.evaluate(X_val, y_val)
     print("Binary Cross-Entropy Loss:", round(loss, 7))
-    print("Binary Accuracy on test set:", round(binary_accuracy, 7))
-    print("Precision on test set:", round(precision, 7))
-    print("Recall on test set:", round(recall, 7))
+    print("Binary Accuracy on val set:", round(binary_accuracy, 7))
+    print("Precision on val set:", round(precision, 7))
+    print("Recall on val set:", round(recall, 7))
 
     # Make predictions on the test set
-    binary_preds = model.predict(X_test)
+    binary_preds = model.predict(X_val)
     # Round the predictions to get the binary class labels (0 or 1)
     binary_preds_rounded = [1 if pred > 0.5 else 0 for pred in binary_preds]
 
     # Calculate F1-score for binary classification
-    f1 = f1_score(y_test, binary_preds_rounded)
+    f1 = f1_score(y_val, binary_preds_rounded)
     print("Confusion Matrix:")
-    print(confusion_matrix(y_test, binary_preds_rounded))
-    print("F1-score: {:.3f}".format(f1))
-    print("F1-score: {:.3f}".format(f1))
+    print(confusion_matrix(y_val, binary_preds_rounded))
+    print("F1-score: {:.5f}".format(f1))
+    print("F1-score: {:.5f}".format(f1))
     
     # Neurons per layer = 300, number of layers = 4
 
     tf.random.set_seed(42)
+    np.random.seed(42)
+    norm_layer = tf.keras.layers.Normalization(input_shape=X_train.shape[1:])
     # Model architecture
     model = tf.keras.Sequential([
+        norm_layer,
         tf.keras.layers.Dense(300, activation='relu', input_shape=(X_train.shape[1],)),
         tf.keras.layers.Dense(300, activation='relu'),
         tf.keras.layers.Dense(300, activation='relu'),
@@ -903,76 +983,37 @@ def run_program(main):
     # Train the model
     history = model.fit(X_train, y_train, epochs=100, batch_size=36, validation_data=(X_val, y_val), verbose=2)
 
-    # Evaluate the model on the test set
-    loss, binary_accuracy, precision, recall = model.evaluate(X_test, y_test)
+    # Evaluate the model on the val set
+    loss, binary_accuracy, precision, recall = model.evaluate(X_val, y_val)
     print("Binary Cross-Entropy Loss:", round(loss, 7))
-    print("Binary Accuracy on test set:", round(binary_accuracy, 7))
-    print("Precision on test set:", round(precision, 7))
-    print("Recall on test set:", round(recall, 7))
+    print("Binary Accuracy on val set:", round(binary_accuracy, 7))
+    print("Precision on val set:", round(precision, 7))
+    print("Recall on val set:", round(recall, 7))
 
-    # Make predictions on the test set
-    binary_preds = model.predict(X_test)
+    # Make predictions on the val set
+    binary_preds = model.predict(X_val)
     # Round the predictions to get the binary class labels (0 or 1)
     binary_preds_rounded = [1 if pred > 0.5 else 0 for pred in binary_preds]
 
     # Calculate F1-score for binary classification
-    f1 = f1_score(y_test, binary_preds_rounded)
+    f1 = f1_score(y_val, binary_preds_rounded)
     print("Confusion Matrix:")
-    print(confusion_matrix(y_test, binary_preds_rounded))
-    print("F1-score: {:.3f}".format(f1))
-    print("F1-score: {:.3f}".format(f1))
-
-# best-3+ optimiser = Adam
-
-    tf.random.set_seed(42)
-    # Model architecture
-    model = tf.keras.Sequential([
-        tf.keras.layers.Dense(200, activation='relu', input_shape=(X_train.shape[1],)),
-        tf.keras.layers.Dense(200, activation='relu'),
-        tf.keras.layers.Dense(200, activation='relu'),
-        tf.keras.layers.Dense(200, activation='relu'),
-        tf.keras.layers.Dense(1, activation='sigmoid')
-    ])
-
-    # Defining the optimizer with a learning rate of 0.01
-    optimizer = tf.keras.optimizers.Adam(learning_rate=0.01)
-
-    # Compiling the model with binary cross-entropy loss and Binary_Accuracy as the metric
-    model.compile(loss='binary_crossentropy', optimizer=optimizer,
-                  metrics=[tf.keras.metrics.BinaryAccuracy(), tf.keras.metrics.Precision(),
-                           tf.keras.metrics.Recall()])
-
-    # Train the model
-    history = model.fit(X_train, y_train, epochs=100, batch_size=36, validation_data=(X_val, y_val), verbose=2)
-
-    # Evaluate the model on the test set
-    loss, binary_accuracy, precision, recall = model.evaluate(X_test, y_test)
-    print("Binary Cross-Entropy Loss:", round(loss, 7))
-    print("Binary Accuracy on test set:", round(binary_accuracy, 7))
-    print("Precision on test set:", round(precision, 7))
-    print("Recall on test set:", round(recall, 7))
-
-    # Make predictions on the test set
-    binary_preds = model.predict(X_test)
-    # Round the predictions to get the binary class labels (0 or 1)
-    binary_preds_rounded = [1 if pred > 0.5 else 0 for pred in binary_preds]
-
-    # Calculate F1-score for binary classification
-    f1 = f1_score(y_test, binary_preds_rounded)
-    print("Confusion Matrix:")
-    print(confusion_matrix(y_test, binary_preds_rounded))
-    print("F1-score: {:.3f}".format(f1))
-    print("F1-score: {:.3f}".format(f1))
+    print(confusion_matrix(y_val, binary_preds_rounded))
+    print("F1-score: {:.5f}".format(f1))
+    print("F1-score: {:.5f}".format(f1))
     
-# Activation fn- tanh
+# Neurons = pyrimad, layers =4
 
     tf.random.set_seed(42)
+    np.random.seed(42)
+    norm_layer = tf.keras.layers.Normalization(input_shape=X_train.shape[1:])
     # Model architecture
     model = tf.keras.Sequential([
-        tf.keras.layers.Dense(200, activation='tanh', input_shape=(X_train.shape[1],)),
-        tf.keras.layers.Dense(200, activation='tanh'),
-        tf.keras.layers.Dense(200, activation='tanh'),
-        tf.keras.layers.Dense(200, activation='tanh'),
+        norm_layer,
+        tf.keras.layers.Dense(64, activation='relu', input_shape=(X_train.shape[1],)),
+        tf.keras.layers.Dense(48, activation='relu'),
+        tf.keras.layers.Dense(32, activation='relu'),
+        tf.keras.layers.Dense(16, activation='relu'),
         tf.keras.layers.Dense(1, activation='sigmoid')
     ])
 
@@ -987,32 +1028,162 @@ def run_program(main):
     # Train the model
     history = model.fit(X_train, y_train, epochs=100, batch_size=36, validation_data=(X_val, y_val), verbose=2)
 
-    # Evaluate the model on the test set
-    loss, binary_accuracy, precision, recall = model.evaluate(X_test, y_test)
+    # Evaluate the model on the val set
+    loss, binary_accuracy, precision, recall = model.evaluate(X_val, y_val)
     print("Binary Cross-Entropy Loss:", round(loss, 7))
-    print("Binary Accuracy on test set:", round(binary_accuracy, 7))
-    print("Precision on test set:", round(precision, 7))
-    print("Recall on test set:", round(recall, 7))
+    print("Binary Accuracy on val set:", round(binary_accuracy, 7))
+    print("Precision on val set:", round(precision, 7))
+    print("Recall on val set:", round(recall, 7))
 
-    # Make predictions on the test set
-    binary_preds = model.predict(X_test)
+    # Make predictions on the val set
+    binary_preds = model.predict(X_val)
     # Round the predictions to get the binary class labels (0 or 1)
     binary_preds_rounded = [1 if pred > 0.5 else 0 for pred in binary_preds]
 
     # Calculate F1-score for binary classification
-    f1 = f1_score(y_test, binary_preds_rounded)
+    f1 = f1_score(y_val, binary_preds_rounded)
     print("Confusion Matrix:")
-    print(confusion_matrix(y_test, binary_preds_rounded))
-    print("F1-score: {:.3f}".format(f1))
-    print("F1-score: {:.3f}".format(f1))
+    print(confusion_matrix(y_val, binary_preds_rounded))
+    print("F1-score: {:.5f}".format(f1))
+    print("F1-score: {:.5f}".format(f1))
+    
+# best+ hidden layers = 3
 
+    tf.random.set_seed(42)
+    np.random.seed(42)
+    norm_layer = tf.keras.layers.Normalization(input_shape=X_train.shape[1:])
+    # Model architecture
+    model = tf.keras.Sequential([
+        norm_layer,
+        tf.keras.layers.Dense(100, activation='relu', input_shape=(X_train.shape[1],)),
+        tf.keras.layers.Dense(100, activation='relu'),
+        tf.keras.layers.Dense(100, activation='relu'),
+        tf.keras.layers.Dense(1, activation='sigmoid')
+    ])
+
+    # Defining the optimizer with a learning rate of 0.01
+    optimizer = tf.keras.optimizers.SGD(learning_rate=0.01)
+
+    # Compiling the model with binary cross-entropy loss and Binary_Accuracy as the metric
+    model.compile(loss='binary_crossentropy', optimizer=optimizer,
+                  metrics=[tf.keras.metrics.BinaryAccuracy(), tf.keras.metrics.Precision(),
+                           tf.keras.metrics.Recall()])
+
+    # Train the model
+    history = model.fit(X_train, y_train, epochs=100, batch_size=36, validation_data=(X_val, y_val), verbose=2)
+
+    # Evaluate the model on the val set
+    loss, binary_accuracy, precision, recall = model.evaluate(X_val, y_val)
+    print("Binary Cross-Entropy Loss:", round(loss, 7))
+    print("Binary Accuracy :", round(binary_accuracy, 7))
+    print("Precision on val set:", round(precision, 7))
+    print("Recall on val set:", round(recall, 7))
+
+    # Make predictions on the val set
+    binary_preds = model.predict(X_val)
+    # Round the predictions to get the binary class labels (0 or 1)
+    binary_preds_rounded = [1 if pred > 0.5 else 0 for pred in binary_preds]
+
+    # Calculate F1-score for binary classification
+    f1 = f1_score(y_val, binary_preds_rounded)
+    print("Confusion Matrix:")
+    print(confusion_matrix(y_val, binary_preds_rounded))
+    print("F1-score: {:.5f}".format(f1))
+    print("F1-score: {:.5f}".format(f1))
+
+# best-3+ optimiser = Adam
+    tf.random.set_seed(42)
+    np.random.seed(42)
+    norm_layer = tf.keras.layers.Normalization(input_shape=X_train.shape[1:])
+    # Model architecture
+    model = tf.keras.Sequential([
+        norm_layer,
+        tf.keras.layers.Dense(100, activation='relu', input_shape=(X_train.shape[1],)),
+        tf.keras.layers.Dense(100, activation='relu'),
+        tf.keras.layers.Dense(1, activation='sigmoid')
+    ])
+
+    # Defining the optimizer with a learning rate of 0.01
+    optimizer = tf.keras.optimizers.Adam(learning_rate=0.01)
+
+    # Compiling the model with binary cross-entropy loss and Binary_Accuracy as the metric
+    model.compile(loss='binary_crossentropy', optimizer=optimizer,
+                  metrics=[tf.keras.metrics.BinaryAccuracy(), tf.keras.metrics.Precision(),
+                           tf.keras.metrics.Recall()])
+
+    # Train the model
+    history = model.fit(X_train, y_train, epochs=100, batch_size=36, validation_data=(X_val, y_val), verbose=2)
+
+    # Evaluate the model on the val set
+    loss, binary_accuracy, precision, recall = model.evaluate(X_val, y_val)
+    print("Binary Cross-Entropy Loss:", round(loss, 7))
+    print("Binary Accuracy :", round(binary_accuracy, 7))
+    print("Precision on val set:", round(precision, 7))
+    print("Recall on val set:", round(recall, 7))
+
+    # Make predictions on the val set
+    binary_preds = model.predict(X_val)
+    # Round the predictions to get the binary class labels (0 or 1)
+    binary_preds_rounded = [1 if pred > 0.5 else 0 for pred in binary_preds]
+
+    # Calculate F1-score for binary classification
+    f1 = f1_score(y_val, binary_preds_rounded)
+    print("Confusion Matrix:")
+    print(confusion_matrix(y_val, binary_preds_rounded))
+    print("F1-score: {:.5f}".format(f1))
+    print("F1-score: {:.5f}".format(f1))
+
+# Activation fn- tanh
+
+    tf.random.set_seed(42)
+    np.random.seed(42)
+    norm_layer = tf.keras.layers.Normalization(input_shape=X_train.shape[1:])
+    # Model architecture
+    model = tf.keras.Sequential([
+        norm_layer,
+        tf.keras.layers.Dense(100, activation='tanh', input_shape=(X_train.shape[1],)),
+        tf.keras.layers.Dense(100, activation='tanh'),
+        tf.keras.layers.Dense(1, activation='sigmoid')
+    ])
+
+    # Defining the optimizer with a learning rate of 0.01
+    optimizer = tf.keras.optimizers.SGD(learning_rate=0.01)
+
+    # Compiling the model with binary cross-entropy loss and Binary_Accuracy as the metric
+    model.compile(loss='binary_crossentropy', optimizer=optimizer,
+                  metrics=[tf.keras.metrics.BinaryAccuracy(), tf.keras.metrics.Precision(),
+                           tf.keras.metrics.Recall()])
+
+    # Train the model
+    history = model.fit(X_train, y_train, epochs=100, batch_size=36, validation_data=(X_val, y_val), verbose=2)
+
+    # Evaluate the model on the val set
+    loss, binary_accuracy, precision, recall = model.evaluate(X_val, y_val)
+    print("Binary Cross-Entropy Loss:", round(loss, 7))
+    print("Binary Accuracy :", round(binary_accuracy, 7))
+    print("Precision on val set:", round(precision, 7))
+    print("Recall on val set:", round(recall, 7))
+
+    # Make predictions on the val set
+    binary_preds = model.predict(X_val)
+    # Round the predictions to get the binary class labels (0 or 1)
+    binary_preds_rounded = [1 if pred > 0.5 else 0 for pred in binary_preds]
+
+    # Calculate F1-score for binary classification
+    f1 = f1_score(y_val, binary_preds_rounded)
+    print("Confusion Matrix:")
+    print(confusion_matrix(y_val, binary_preds_rounded))
+    print("F1-score: {:.5f}".format(f1))
+    print("F1-score: {:.5f}".format(f1))
+
+    """
     """
     Computationally heavy---but would lead to better/more assured results for hyper-parameter selection
     import optuna
     # Define the objective function for Optuna
     def objective(trial):
         # Sample hyperparameters to explore
-        num_layers = trial.suggest_int('num_layers', 2, 7)  # Suggest a number of layers between 1 and 5
+        num_layers = trial.suggest_int('num_layers', 2, 7)  
 
         # Model architecture with the suggested number of layers and neurons
         model = tf.keras.Sequential()
@@ -1076,20 +1247,21 @@ def run_program(main):
     f1 = f1_score(y_test, binary_preds_rounded)
     print("Confusion Matrix:")
     print(confusion_matrix(y_test, binary_preds_rounded))
-    print("F1-score: {:.3f}".format(f1))
-    print("F1-score: {:.3f}".format(f1))
+    print("F1-score: {:.5f}".format(f1))
+    print("F1-score: {:.5f}".format(f1))
     """
+
     """
 # Activation functions- relu + tanh
 
     tf.random.set_seed(42)
-
+    np.random.seed(42)
+    norm_layer = tf.keras.layers.Normalization(input_shape=X_train.shape[1:])
     # Model architecture
     model = tf.keras.Sequential([
-        tf.keras.layers.Dense(200, activation='relu', input_shape=(X_train.shape[1],)),
-        tf.keras.layers.Dense(200, activation='tanh'),
-        tf.keras.layers.Dense(200, activation='relu'),
-        tf.keras.layers.Dense(200, activation='tanh'),
+        norm_layer,
+        tf.keras.layers.Dense(100, activation='relu', input_shape=(X_train.shape[1],)),
+        tf.keras.layers.Dense(100, activation='tanh'),
         tf.keras.layers.Dense(1, activation='sigmoid')
     ])
 
@@ -1103,122 +1275,68 @@ def run_program(main):
 
     # Train the model
     history = model.fit(X_train, y_train, epochs=100, batch_size=36, validation_data=(X_val, y_val), verbose=2)
-
-    # Evaluate the model on the test set
-    loss, binary_accuracy, precision, recall = model.evaluate(X_test, y_test)
-    print("Binary Cross-Entropy Loss:", round(loss, 7))
-    print("Binary Accuracy on test set:", round(binary_accuracy, 7))
-    print("Precision on test set:", round(precision, 7))
-    print("Recall on test set:", round(recall, 7))
-
-    # Make predictions on the test set
-    binary_preds = model.predict(X_test)
-    # Round the predictions to get the binary class labels (0 or 1)
-    binary_preds_rounded = [1 if pred > 0.5 else 0 for pred in binary_preds]
-
-    # Calculate F1-score for binary classification
-    f1 = f1_score(y_test, binary_preds_rounded)
-    print("Confusion Matrix:")
-    print(confusion_matrix(y_test, binary_preds_rounded))
-    print("F1-score: {:.3f}".format(f1))
-    print("F1-score: {:.3f}".format(f1))
-    
-# Relu + tanh
-    tf.random.set_seed(42)
-
-    # Model architecture
-    model = tf.keras.Sequential([
-        tf.keras.layers.Dense(200, activation='relu', input_shape=(X_train.shape[1],)),
-        tf.keras.layers.Dense(200, activation='relu'),
-        tf.keras.layers.Dense(200, activation='tanh'),
-        tf.keras.layers.Dense(200, activation='tanh'),
-        tf.keras.layers.Dense(1, activation='sigmoid')
-    ])
-
-    # Defining the optimizer with a learning rate of 0.01
-    optimizer = tf.keras.optimizers.SGD(learning_rate=0.01)
-
-    # Compiling the model with binary cross-entropy loss and Binary_Accuracy as the metric
-    model.compile(loss='binary_crossentropy', optimizer=optimizer,
-                  metrics=[tf.keras.metrics.BinaryAccuracy(), tf.keras.metrics.Precision(),
-                           tf.keras.metrics.Recall()])
-
-    # Train the model
-    history = model.fit(X_train, y_train, epochs=100, batch_size=36, validation_data=(X_val, y_val), verbose=2)
-
-    # Evaluate the model on the test set
-    loss, binary_accuracy, precision, recall = model.evaluate(X_test, y_test)
-    print("Binary Cross-Entropy Loss:", round(loss, 7))
-    print("Binary Accuracy on test set:", round(binary_accuracy, 7))
-    print("Precision on test set:", round(precision, 7))
-    print("Recall on test set:", round(recall, 7))
-
-    # Make predictions on the test set
-    binary_preds = model.predict(X_test)
-    # Round the predictions to get the binary class labels (0 or 1)
-    binary_preds_rounded = [1 if pred > 0.5 else 0 for pred in binary_preds]
-
-    # Calculate F1-score for binary classification
-    f1 = f1_score(y_test, binary_preds_rounded)
-    print("Confusion Matrix:")
-    print(confusion_matrix(y_test, binary_preds_rounded))
-    print("F1-score: {:.3f}".format(f1))
-    print("F1-score: {:.3f}".format(f1))
-    """
-    tf.random.set_seed(42)
-
-    # Model architecture
-    model = tf.keras.Sequential([
-        tf.keras.layers.Dense(200, activation='relu', input_shape=(X_train.shape[1],)),
-        tf.keras.layers.Dense(200, activation='relu'),
-        tf.keras.layers.Dense(200, activation='relu'),
-        tf.keras.layers.Dense(200, activation='relu'),
-        tf.keras.layers.Dense(1, activation='sigmoid')
-    ])
-
-    # Defining the optimizer with a learning rate of 0.01
-    optimizer = tf.keras.optimizers.SGD(learning_rate=0.01)
-
-    # Compiling the model with binary cross-entropy loss and Binary_Accuracy as the metric
-    model.compile(loss='binary_crossentropy', optimizer=optimizer,
-                  metrics=[tf.keras.metrics.BinaryAccuracy(), tf.keras.metrics.Precision(),
-                           tf.keras.metrics.Recall()])
-
-    # Train the model
-    history = model.fit(X_train, y_train, epochs=100, batch_size=36, validation_data=(X_val, y_val), verbose=2)
-
-    # Evaluate the model on the training set
-    train_loss, train_binary_accuracy, train_precision, train_recall = model.evaluate(X_train, y_train)
-    print("Train Binary Cross-Entropy Loss:", round(train_loss, 7))
-    print("Train Binary Accuracy:", round(train_binary_accuracy, 7))
-    print("Train Precision:", round(train_precision, 7))
-    print("Train Recall:", round(train_recall, 7))
 
     # Evaluate the model on the val set
-    val_loss, val_binary_accuracy, val_precision, val_recall = model.evaluate(X_val, y_val)
-    print("Val Binary Cross-Entropy Loss:", round(val_loss, 7))
-    print("Val Binary Accuracy:", round(val_binary_accuracy, 7))
-    print("Val Precision:", round(val_precision, 7))
-    print("Val Recall:", round(val_recall, 7))
+    loss, binary_accuracy, precision, recall = model.evaluate(X_val, y_val)
+    print("Binary Cross-Entropy Loss:", round(loss,7))
+    print("Binary Accuracy :", round(binary_accuracy,7))
+    print("Precision on val set:", round(precision,7))
+    print("Recall on val set:", round(recall,7))
 
-    # Evaluate the model on the test set
-    test_loss, test_binary_accuracy, test_precision, test_recall = model.evaluate(X_test, y_test)
-    print("Test Binary Cross-Entropy Loss:", round(test_loss, 7))
-    print("Test Binary Accuracy:", round(test_binary_accuracy, 7))
-    print("Test Precision:", round(test_precision, 7))
-    print("Test Recall:", round(test_recall, 7))
-
-    # Make predictions on the test set
-    binary_preds = model.predict(X_test)
+    # Make predictions on the val set
+    binary_preds = model.predict(X_val)
     # Round the predictions to get the binary class labels (0 or 1)
     binary_preds_rounded = [1 if pred > 0.5 else 0 for pred in binary_preds]
 
     # Calculate F1-score for binary classification
-    f1 = f1_score(y_test, binary_preds_rounded)
+    f1 = f1_score(y_val, binary_preds_rounded)
     print("Confusion Matrix:")
-    print(confusion_matrix(y_test, binary_preds_rounded))
-    print("F1-score: {:.3f}".format(f1))
-    print("F1-score: {:.3f}".format(f1))
+    print(confusion_matrix(y_val, binary_preds_rounded))
+    print("F1-score: {:.5f}".format(f1))
+    print("F1-score: {:.5f}".format(f1))
+
+# Best Model
+
+    tf.random.set_seed(42)
+    np.random.seed(42)
+    norm_layer = tf.keras.layers.Normalization(input_shape=X_train.shape[1:])
+    # Model architecture
+    model = tf.keras.Sequential([
+        norm_layer,
+        tf.keras.layers.Dense(100, activation='relu', input_shape=(X_train.shape[1],)),
+        tf.keras.layers.Dense(100, activation='relu'),
+        tf.keras.layers.Dense(1, activation='sigmoid')
+    ])
+
+    # Defining the optimizer with a learning rate of 0.01
+    optimizer = tf.keras.optimizers.SGD(learning_rate=0.01)
+
+    # Compiling the model with binary cross-entropy loss and Binary_Accuracy as the metric
+    model.compile(loss='binary_crossentropy', optimizer=optimizer,
+                  metrics=[tf.keras.metrics.BinaryAccuracy(), tf.keras.metrics.Precision(),
+                           tf.keras.metrics.Recall()])
+
+    # Train the model
+    history = model.fit(X_train, y_train, epochs=100, batch_size=36, validation_data=(X_val, y_val), verbose=2)
+
+    # Evaluate the model on the val set
+    loss, binary_accuracy, precision, recall = model.evaluate(X_val, y_val)
+    print("Binary Cross-Entropy Loss:", round(loss, 7))
+    print("Binary Accuracy :", round(binary_accuracy, 7))
+    print("Precision on val set:", round(precision, 7))
+    print("Recall on val set:", round(recall, 7))
+
+    # Make predictions on the val set
+    binary_preds = model.predict(X_val)
+    # Round the predictions to get the binary class labels (0 or 1)
+    binary_preds_rounded = [1 if pred > 0.5 else 0 for pred in binary_preds]
+
+    # Calculate F1-score for binary classification
+    f1 = f1_score(y_val, binary_preds_rounded)
+    print("Confusion Matrix:")
+    print(confusion_matrix(y_val, binary_preds_rounded))
+    print("F1-score: {:.5f}".format(f1))
+    print("F1-score: {:.5f}".format(f1))
 
     # Detection of model fit given the set hyperparameters
     plt.plot(history.history['binary_accuracy'], label='Training Binary Accuracy')
@@ -1240,24 +1358,28 @@ def run_program(main):
     plt.title('Training and Validation Loss')
     plt.show()
     print("lr")
+    """
 
 
 # with regularisation---L1 (Lasso)
 
     tf.random.set_seed(42)
 
-
-# with L2 regularisation---Ridge
+# with L2 regularisation---Ridge with 0.001
 
     tf.random.set_seed(42)
+    np.random.seed(42)
 
-    # Model architecture with L2 regularization
+    # Define L2 regularization strength
+    l2_reg_strength = 0.001
+
+    norm_layer = tf.keras.layers.Normalization(input_shape=X_train.shape[1:])
+    # Model architecture
     model = tf.keras.Sequential([
-        tf.keras.layers.Dense(200, activation='relu', input_shape=(X_train.shape[1],),
-                              kernel_regularizer=tf.keras.regularizers.l2(0.001)),
-        tf.keras.layers.Dense(200, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.001)),
-        tf.keras.layers.Dense(200, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.001)),
-        tf.keras.layers.Dense(200, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.001)),
+        norm_layer,
+        tf.keras.layers.Dense(100, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(l2_reg_strength),
+                              input_shape=(X_train.shape[1],)),
+        tf.keras.layers.Dense(100, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(l2_reg_strength)),
         tf.keras.layers.Dense(1, activation='sigmoid')
     ])
 
@@ -1272,24 +1394,46 @@ def run_program(main):
     # Train the model
     history = model.fit(X_train, y_train, epochs=100, batch_size=36, validation_data=(X_val, y_val), verbose=2)
 
-    # Evaluate the model on the test set
-    loss, binary_accuracy, precision, recall = model.evaluate(X_test, y_test)
+    # Evaluate the model on the val set
+    loss, binary_accuracy, precision, recall = model.evaluate(X_val, y_val)
     print("Binary Cross-Entropy Loss:", round(loss, 7))
-    print("Binary Accuracy on test set:", round(binary_accuracy, 7))
-    print("Precision on test set:", round(precision, 7))
-    print("Recall on test set:", round(recall, 7))
+    print("Binary Accuracy:", round(binary_accuracy, 7))
+    print("Precision on val set:", round(precision, 7))
+    print("Recall on val set:", round(recall, 7))
 
-    # Make predictions on the test set
-    binary_preds = model.predict(X_test)
+    # Make predictions on the val set
+    binary_preds = model.predict(X_val)
     # Round the predictions to get the binary class labels (0 or 1)
     binary_preds_rounded = [1 if pred > 0.5 else 0 for pred in binary_preds]
 
     # Calculate F1-score for binary classification
-    f1 = f1_score(y_test, binary_preds_rounded)
+    f1 = f1_score(y_val, binary_preds_rounded)
     print("Confusion Matrix:")
-    print(confusion_matrix(y_test, binary_preds_rounded))
-    print("F1-score: {:.3f}".format(f1))
-    print("F1-score: {:.3f}".format(f1))
+    print(confusion_matrix(y_val, binary_preds_rounded))
+    print("F1-score: {:.5f}".format(f1))
+
+    # Detection of model fit given the set hyperparameters
+    plt.plot(history.history['binary_accuracy'], label='Training Binary Accuracy')
+    plt.plot(history.history['val_binary_accuracy'], label='Validation Binary Accuracy')
+    plt.xlabel('Epoch')
+    plt.ylabel('Binary Accuracy')
+    plt.legend()
+    plt.title('Training Binary Accuracy and Validation Binary Accuracy')
+    plt.show()
+
+    # Plot the loss curve for training and validation
+    plt.plot(history.history['loss'], label='Training Loss')
+    plt.plot(history.history['val_loss'], label='Validation Loss')
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
+    plt.legend()
+    plt.title('Training and Validation Loss')
+    plt.show()
+
+
+
+
+
 
 if __name__ == '__main__':
     run_program('PyCharm')

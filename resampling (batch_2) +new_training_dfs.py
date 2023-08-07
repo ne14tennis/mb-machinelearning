@@ -641,6 +641,7 @@ class a2:
         print(confusion_matrix(y_val, binary_preds_rounded))
         print("F1-score: {:.5f}".format(f1))
         print("Comb- MLP")
+
         # Best model for voting classifier------RUS
 
         # Performance of slected resampling method (rus through validation comparison)
