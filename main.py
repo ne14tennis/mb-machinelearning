@@ -37,6 +37,9 @@ from sklearn.model_selection import RepeatedStratifiedKFold
 from numpy import mean
 from numpy import std
 
+# LC
+from sklearn.model_selection import learning_curve
+
 # Tuning
 from sklearn.model_selection import GridSearchCV
 
@@ -63,7 +66,7 @@ def run_program(main):
 
     print(X_train.columns)
     # K-fold Cross Validation
-
+    """
     # MLP
     tf.random.set_seed(42)
     np.random.seed(42)
@@ -103,7 +106,7 @@ def run_program(main):
         f1 = f1_score(Y, y_pred)
         return f1
 
-    # evaluate a given model using cross-validation
+    # Evaluate using cross-validation
     def evaluate_model(model, X, Y, metric='f1'):
         cv = RepeatedStratifiedKFold(n_splits=10, n_repeats=5, random_state=1)
         scores = cross_val_score(model, X, Y, scoring=metric, cv=cv, n_jobs=-1, error_score='raise')
@@ -112,10 +115,10 @@ def run_program(main):
     # get the models to evaluate
     models = get_models()
 
-    # evaluate the Keras model
+    # Evaluate the Keras model
     keras_f1 = evaluate_keras_model(model, X_train, y_train)
 
-    # evaluate the scikit-learn models and store results
+    # Evaluate the scikit-learn models and store results
     results, names = list(), list()
     metric = 'f1'
     for name, model in models.items():
@@ -123,17 +126,17 @@ def run_program(main):
         results.append(scores)
         names.append(name)
 
-    # add the Keras model's F1 score to the results list and names list
+    # Add the Keras model's F1 score to the results list and names list
     results.append([keras_f1])
     names.append('MLP')
 
-    # plot model performance for comparison
+    # Plot model performance for comparison
     plt.boxplot(results, labels=names, showmeans=True)
     plt.title('Model Performance Comparison')
     plt.ylabel(f'{metric.upper()} Score')
     plt.show()
     print("Cross val")
-
+    """
     print("Cross-val")
 
     # Fine-tuning
@@ -154,7 +157,8 @@ def run_program(main):
     xg_clf.best_estimator_
 
     xg_clf.best_params_
-
+# Best XG Boost
+    """
     xg = XGBClassifier(random_state=77, colsample_bytree=0.3, learning_rate=0.3, max_depth=6,
                        n_estimators=750)
 
@@ -172,27 +176,28 @@ def run_program(main):
     print("Confusion Matrix:")
     print(confusion_matrix(y_test, xg_y_pred))
     print("Precision:", precision)
-    print("F1 score:", f1)
     print("Recall:", recall)
-    print(confusion_matrix(y_test, xg_y_pred))
-    print("Best params for XG Boost found")
- 
-# Create a function to plot learning curves
-    def plot_learning_curves(model, X_train, y_train):
-        train_sizes, train_scores, val_scores = learning_curve(model, X_train, y_train, cv=5, train_sizes=np.linspace(0.1, 1.0, 5), scoring='accuracy', n_jobs=-1)
-       
+    print("F1 Score:", f1)
+    print("Best params for xg boost")
+
+    # Function to plot LC
+    def plot_l_c(xg, X_train, y_train):
+        train_sizes, train_scores, val_scores = learning_curve(xg, X_train, y_train, cv=5,
+                                                               train_sizes=np.linspace(0.1, 1.0, 5), scoring='accuracy',
+                                                               n_jobs=-1)
+
         # Calculate the mean and standard deviation for training and validation scores
         train_mean = np.mean(train_scores, axis=1)
         train_std = np.std(train_scores, axis=1)
         val_mean = np.mean(val_scores, axis=1)
         val_std = np.std(val_scores, axis=1)
-    
+
         # Plot the learning curves
         plt.figure(figsize=(10, 6))
         plt.plot(train_sizes, train_mean, label='Training Accuracy', color='blue')
         plt.fill_between(train_sizes, train_mean - train_std, train_mean + train_std, alpha=0.1, color='blue')
-        plt.plot(train_sizes, val_mean, label='Validation Accuracy', color='red')
-        plt.fill_between(train_sizes, val_mean - val_std, val_mean + val_std, alpha=0.1, color='red')
+        plt.plot(train_sizes, val_mean, label='Validation Accuracy', color='orange')
+        plt.fill_between(train_sizes, val_mean - val_std, val_mean + val_std, alpha=0.1, color='orange')
         plt.xlabel('Training Set Size')
         plt.ylabel('Accuracy')
         plt.title('Learning Curves')
@@ -200,9 +205,35 @@ def run_program(main):
         plt.grid()
         plt.show()
 
-# Plot the learning curves
-    plot_learning_curves(xg, X_train, y_train)
-    print("Learning curve for XG Boost")
+    # Plotting LC
+    plot_l_c(xg, X_train, y_train)
+    print("Learning Curve for XG Boost")
+    """
+    # L2 reg attempted with lambda=0.01
+
+    xg_r = XGBClassifier(random_state=77, colsample_bytree=0.3, learning_rate=0.3, max_depth=6,
+                       n_estimators=750, reg_lambda=0.01)
+
+    xg_r.fit(X_train, y_train)
+
+    # Prediction on test set
+    xg_y_pred = xg_r.predict(X_test)
+
+    # Prediction Performance Metrics
+    accuracy = accuracy_score(y_test, xg_y_pred)
+    print("Accuracy:", accuracy)
+    f1 = f1_score(y_test, xg_y_pred)
+    precision = precision_score(y_test, xg_y_pred)
+    recall = recall_score(y_test, xg_y_pred)
+    print("Confusion Matrix:")
+    print(confusion_matrix(y_test, xg_y_pred))
+    print("Precision:", precision)
+    print("Recall:", recall)
+    print("F1 Score:", f1)
+    print("L2 regularisation attempted")
+    # Plot regularised LC
+    plot_l_c(xg, X_train, y_train)
+    print("Learning Curve for XG Boost")
     """
 #MLP
     """
@@ -1358,7 +1389,7 @@ def run_program(main):
     plt.title('Training and Validation Loss')
     plt.show()
     print("lr")
-    """
+    
 
 
 # with regularisation---L1 (Lasso)
@@ -1420,16 +1451,95 @@ def run_program(main):
     plt.legend()
     plt.title('Training Binary Accuracy and Validation Binary Accuracy')
     plt.show()
+    print("Graph")
+    """
+# Dropout
+    tf.random.set_seed(42)
+    np.random.seed(42)
 
-    # Plot the loss curve for training and validation
-    plt.plot(history.history['loss'], label='Training Loss')
-    plt.plot(history.history['val_loss'], label='Validation Loss')
+    norm_layer = tf.keras.layers.Normalization(input_shape=X_train.shape[1:])
+
+    model = tf.keras.Sequential([
+        norm_layer,
+        tf.keras.layers.Dense(100, activation='relu', input_shape=(X_train.shape[1],)),
+        tf.keras.layers.Dropout(0.1),
+        tf.keras.layers.Dense(100, activation='relu'),
+        tf.keras.layers.Dropout(0.1),
+        tf.keras.layers.Dense(1, activation='sigmoid')
+    ])
+
+    optimizer = tf.keras.optimizers.SGD(learning_rate=0.01)
+    model.compile(loss='binary_crossentropy', optimizer=optimizer,
+                  metrics=[tf.keras.metrics.BinaryAccuracy(), tf.keras.metrics.Precision(),
+                           tf.keras.metrics.Recall()])
+
+    history = model.fit(X_train, y_train, epochs=100, batch_size=36, validation_data=(X_val, y_val), verbose=2)
+
+    loss, binary_accuracy, precision, recall = model.evaluate(X_val, y_val)
+    print("Binary Cross-Entropy Loss:", round(loss, 7))
+    print("Binary Accuracy:", round(binary_accuracy, 7))
+    print("Precision on val set:", round(precision, 7))
+    print("Recall on val set:", round(recall, 7))
+
+    binary_preds = model.predict(X_val)
+    binary_preds_rounded = [1 if pred > 0.5 else 0 for pred in binary_preds]
+
+    f1 = f1_score(y_val, binary_preds_rounded)
+    print("Confusion Matrix:")
+    print(confusion_matrix(y_val, binary_preds_rounded))
+    print("F1-score: {:.5f}".format(f1))
+    print("Dropout attempted")
+    # Detection of model fit given the set hyperparameters
+    plt.plot(history.history['binary_accuracy'], label='Training Binary Accuracy')
+    plt.plot(history.history['val_binary_accuracy'], label='Validation Binary Accuracy')
     plt.xlabel('Epoch')
-    plt.ylabel('Loss')
+    plt.ylabel('Binary Accuracy')
     plt.legend()
-    plt.title('Training and Validation Loss')
+    plt.title('Training Binary Accuracy and Validation Binary Accuracy')
     plt.show()
+    print("Graph after dropout")
+# Early Stopping
 
+    tf.random.set_seed(42)
+    np.random.seed(42)
+
+    norm_layer = tf.keras.layers.Normalization(input_shape=X_train.shape[1:])
+
+    model = tf.keras.Sequential([
+        norm_layer,
+        tf.keras.layers.Dense(100, activation='relu', input_shape=(X_train.shape[1],)),
+        tf.keras.layers.Dense(100, activation='relu'),
+        tf.keras.layers.Dense(1, activation='sigmoid')
+    ])
+
+    optimizer = tf.keras.optimizers.SGD(learning_rate=0.01)
+    model.compile(loss='binary_crossentropy', optimizer=optimizer,
+                  metrics=[tf.keras.metrics.BinaryAccuracy(), tf.keras.metrics.Precision(),
+                           tf.keras.metrics.Recall()])
+
+    # Define early stopping
+    early_stopping = tf.keras.callbacks.EarlyStopping(
+        monitor='val_loss', patience=10, restore_best_weights=True
+    )
+
+    # Train the model with early stopping
+    history = model.fit(X_train, y_train, epochs=100, batch_size=36,
+                        validation_data=(X_val, y_val), verbose=2, callbacks=[early_stopping])
+
+    loss, binary_accuracy, precision, recall = model.evaluate(X_val, y_val)
+    print("Binary Cross-Entropy Loss:", round(loss, 7))
+    print("Binary Accuracy:", round(binary_accuracy, 7))
+    print("Precision on val set:", round(precision, 7))
+    print("Recall on val set:", round(recall, 7))
+
+    binary_preds = model.predict(X_val)
+    binary_preds_rounded = [1 if pred > 0.5 else 0 for pred in binary_preds]
+
+    f1 = f1_score(y_val, binary_preds_rounded)
+    print("Confusion Matrix:")
+    print(confusion_matrix(y_val, binary_preds_rounded))
+    print("F1-score: {:.5f}".format(f1))
+    print("Early stopping implemented")
 
 
 
