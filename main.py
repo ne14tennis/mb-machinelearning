@@ -30,7 +30,7 @@ from keras.layers import Dense
 # Performance Metrics
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import make_scorer, f1_score
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import confusion_matrix, roc_auc_score, roc_curve, precision_recall_curve, auc
 from sklearn.metrics import precision_score, recall_score
 
 # Cross Val
@@ -95,24 +95,36 @@ def run_program(main):
     # Train the model
     history = model.fit(X_train, y_train, epochs=100, batch_size=36, validation_data=(X_val, y_val), verbose=2)
 
-    # Evaluate the model on the train set
+    # Evaluate the model on the test set
     loss, binary_accuracy, precision, recall = model.evaluate(X_test, y_test)
     print("Binary Cross-Entropy Loss:", round(loss, 7))
     print("Binary Accuracy on test set:", round(binary_accuracy, 7))
     print("Precision on test set:", round(precision, 7))
     print("Recall on test set:", round(recall, 7))
 
-    # Make predictions on the val set
-    binary_preds = model.predict(X_val)
+    # Make predictions on the test set
+    binary_preds = model.predict(X_test)
     # Round the predictions to get the binary class labels (0 or 1)
     binary_preds_rounded = [1 if pred > 0.5 else 0 for pred in binary_preds]
     print("MLP Classifier")
 # Evaluation of MLP classifier
 
+    # Calculate Precision-Recall curve on test set
+    precision_test, recall_test, _ = precision_recall_curve(y_test, binary_preds_rounded)
+    # Plot Precision-Recall curve on test set
+    plt.subplot(1, 2, 2)
+    plt.plot(recall_test, precision_test, color='blue', lw=2,
+             label='Precision-Recall curve (area = %0.2f)' % auc(recall_test, precision_test))
+    plt.xlabel('Recall')
+    plt.ylabel('Precision')
+    plt.title('Precision-Recall Curve (Test Set)')
+    plt.legend(loc="lower left")
 
+    plt.tight_layout()
+    plt.show()
+    print("PR Curve")
 
-
-# Setting precision -recall threshold
+    # Setting precision -recall threshold
 
     # Defining the optimizer with a learning rate of 0.01
     optimizer = tf.keras.optimizers.SGD(learning_rate=0.01)
@@ -163,7 +175,7 @@ def run_program(main):
         binary_preds_rounded = [1 if pred > threshold else 0 for pred in binary_preds]
         current_f1 = f1_score(y_val, binary_preds_rounded)
         current_recall = recall_score(y_val, binary_preds_rounded)
-        if current_f1 > best_f1 and current_recall > 0.85:  # Adjust the recall threshold as needed
+        if current_f1 > best_f1 and current_recall > 0.85:
             best_f1 = current_f1
             best_threshold = threshold
 
@@ -178,6 +190,43 @@ def run_program(main):
     print(confusion_matrix(y_val, binary_preds_rounded_best))
     print("F1-score with best threshold:", round(f1_score(y_val, binary_preds_rounded_best), 5))
     print("Threshold applied at 85% recall atleast")
+# XG Boost
+    # Best XG Boost
+
+    xg = XGBClassifier(random_state=77, colsample_bytree=0.3, learning_rate=0.3, max_depth=6,
+                       n_estimators=750)
+
+    xg.fit(X_train, y_train)
+
+    # Prediction on test set
+    xg_y_pred = xg.predict(X_test)
+
+    # Prediction Performance Metrics
+    accuracy = accuracy_score(y_test, xg_y_pred)
+    print("Accuracy:", accuracy)
+    f1 = f1_score(y_test, xg_y_pred)
+    precision = precision_score(y_test, xg_y_pred)
+    recall = recall_score(y_test, xg_y_pred)
+    print("Confusion Matrix:")
+    print(confusion_matrix(y_test, xg_y_pred))
+    print("Precision:", precision)
+    print("Recall:", recall)
+    print("F1 Score:", f1)
+    print("XG Boost")
+    # Calculate Precision-Recall curve on test set
+    precision_test, recall_test, _ = precision_recall_curve(y_test, xg_y_pred)
+    # Plot Precision-Recall curve on test set
+    plt.subplot(1, 2, 2)
+    plt.plot(recall_test, precision_test, color='blue', lw=2,
+             label='Precision-Recall curve (area = %0.2f)' % auc(recall_test, precision_test))
+    plt.xlabel('Recall')
+    plt.ylabel('Precision')
+    plt.title('Precision-Recall Curve (Test Set)')
+    plt.legend(loc="lower left")
+
+    plt.tight_layout()
+    plt.show()
+    print("PR Curve")
 
 
 

@@ -147,7 +147,7 @@ class a3:
         # Fine-tuning
 
         # XG Boost
-        """
+
         params = {'max_depth': [3, 4, 5, 6, 7],
                   'learning_rate': [0.001, 0.01, 0.05, 0.1, 0.3],
                   'n_estimators': [50, 100, 300, 500, 750],
@@ -269,10 +269,7 @@ class a3:
         print("Recall:", recall)
         print("F1 Score:", f1)
         print("L2 regularisation attempted")
-        # Plot regularised LC
-        plot_l_c(xg, X_train, y_train)
-        print("Learning Curve for XG Boost")
-        """
+
         # MLP
         """
         params considered-
@@ -289,7 +286,7 @@ class a3:
                         batch size:    ]
         """
         # Base model
-        """
+
         tf.random.set_seed(42)
         np.random.seed(42)
         # Model architecture
@@ -1245,7 +1242,7 @@ class a3:
         print("F1-score: {:.5f}".format(f1))
         print("F1-score: {:.5f}".format(f1))
     
-        """
+
         """
         Computationally heavy---but would lead to better/more assured results for hyper-parameter selection
         import optuna
