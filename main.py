@@ -110,7 +110,20 @@ def run_program(main):
     plt.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
     plt.show()
     print('Network')
+    # Genre
+    genre_distribution = g_watch['genre_name'].value_counts()
+
+    plt.figure(figsize=(10, 6))
+    plt.bar(genre_distribution.index, genre_distribution.values)
+    plt.title('Genre Distribution')
+    plt.xlabel('Genre')
+    plt.ylabel('Count')
+    plt.xticks(rotation=45, ha='right')  # Rotate labels for better readability
+    plt.tight_layout()  # Adjust layout for better spacing
+    plt.show()
+    print('Genre')
     # State
+    """
     data = {
         'State Name': ['Montana', 'Michigan', 'Nebraska', 'Texas', 'Alaska'],
         'Latitude': [46.8797, 44.3148, 41.4925, 31.9686, 64.2008],
@@ -118,19 +131,20 @@ def run_program(main):
     }
 
     states_df = pd.DataFrame(data)
+    
     print(states_df)
-
-
+    """
     # Hour of Day
+
     plt.figure(figsize=(10, 6))
     sns.lineplot(x=watch['hour_of_day'].value_counts().index, y=watch['hour_of_day'].value_counts().values, marker="o")
     plt.title('TV Programme Viewership By Hour ')
     plt.xlabel('Hour of Day')
     plt.ylabel('Count')
-    plt.xticks(range(1, 25))  # Assuming you want to label all hours
+    plt.xticks(range(1, 25))
     plt.grid(True)
     plt.show()
-    print('hour of dat plot')
+    print('hour of day plot')
     # Day
 
     day_dist = watch['day'].value_counts()
@@ -145,10 +159,13 @@ def run_program(main):
     plt.title('Day Distribution')
     plt.axis('equal')
     plt.show()
-
-
-
+    print("Day")
     # Creating watched for EDA
+
+
+
+
+
     # Creating watched for EDA
     # Creating watched for EDA
 
