@@ -78,9 +78,8 @@ def run_program(main):
     segment_df = atd.files_to_df('prod_mb/data_source/machine_learning_data', 'segment.csv', 'csv', has_header=True)
     mrkt_hh = atd.files_to_df('prod_mb/data_source/machine_learning_data', 'market_hh.csv', 'csv', has_header=True)
     genre_df = atd.files_to_df('prod_mb/data_source/machine_learning_data', 'genre_df.csv','csv', has_header=True)
-    df = atd.sql_to_df('test_sql')
     pd.set_option('display.max_columns', None)
-    print(df.head())
+    print('check')
     # Genre df
     """
     genre_df = df[['genre_id','genre_name']]
@@ -102,6 +101,37 @@ def run_program(main):
     watch = watch.drop(['time'], axis=1)
 
     print("DFs created")
+    # Network
+
+    network_distribution = watch['network_id'].value_counts()
+    plt.figure(figsize=(8, 8))
+    plt.pie(network_distribution, labels=network_distribution.index, autopct='%1.1f%%', startangle=140)
+    plt.title('Network Distribution')
+    plt.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
+    plt.show()
+    print('Network')
+
+    # Hour of Day
+    plt.figure(figsize=(10, 6))
+    sns.lineplot(x=watch['hour_of_day'].value_counts().index, y=watch['hour_of_day'].value_counts().values, marker="o")
+    plt.title('TV Programme Viewership By Hour ')
+    plt.xlabel('Hour of Day')
+    plt.ylabel('Count')
+    plt.xticks(range(1, 25))  # Assuming you want to label all hours
+    plt.grid(True)
+    plt.show()
+    print('hour of dat plot')
+
+
+
+    # Creating watched for EDA
+    # Creating watched for EDA
+    # Creating watched for EDA
+    # Creating watched for EDA
+
+
+
+
 
 
 
