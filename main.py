@@ -160,13 +160,68 @@ def run_program(main):
     plt.axis('equal')
     plt.show()
     print("Day")
-    # Creating watched for EDA
+    # Genre per network
+
+    # 33
+    n_33 = g_watch[g_watch['network_id'] == 33]
+
+    g_33 = n_33['genre_name'].value_counts()
+
+    plt.figure(figsize=(10, 6))
+    plt.bar(g_33.index, g_33.values)
+    plt.title('Genre Distribution For Network 33')
+    plt.xlabel('Genre')
+    plt.ylabel('Count')
+    plt.xticks(rotation=45, ha='right')
+    plt.tight_layout()
+    plt.show()
+    print("Genre: Network 33")
+    # 4
+    n_4 = g_watch[g_watch['network_id'] == 4]
+
+    g_4 = n_4['genre_name'].value_counts()
+
+    plt.figure(figsize=(10, 6))
+    plt.bar(g_4.index, g_4.values)
+    plt.title('Genre Distribution For Network 4')
+    plt.xlabel('Genre')
+    plt.ylabel('Count')
+    plt.xticks(rotation=45, ha='right')
+    plt.tight_layout()
+    plt.show()
+
+    print("Genre: Network 4")
+    # 5
+    n_5 = g_watch[g_watch['network_id'] == 5]
+
+    g_5 = n_5['genre_name'].value_counts()
+
+    plt.figure(figsize=(10, 6))
+    plt.bar(g_5.index, g_5.values)
+    plt.title('Genre Distribution For Network 5')
+    plt.xlabel('Genre')
+    plt.ylabel('Count')
+    plt.xticks(rotation=45, ha='right')
+    plt.tight_layout()
+    plt.show()
+    print("Genre: Network 5")
+
+    # 1 Male only (585)
+    male_df = segment_df[segment_df['585']==1]
+    male_df = male_df['hh_id']
+
+
+
+    # 1 Female only (586)
+
+    # Child
+    # Age group 1
+
+    # Age group 5
 
 
 
 
-
-    # Creating watched for EDA
     # Creating watched for EDA
 
 
