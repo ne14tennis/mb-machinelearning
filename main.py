@@ -30,7 +30,7 @@ from keras.layers import Dense
 # Performance Metrics
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import make_scorer, f1_score
-from sklearn.metrics import confusion_matrix, roc_auc_score, roc_curve, precision_recall_curve, auc
+from sklearn.metrics import confusion_matrix, precision_recall_curve, auc
 from sklearn.metrics import precision_score, recall_score
 
 # Cross Val
@@ -48,6 +48,8 @@ from sklearn.metrics import make_scorer
 from sklearn.model_selection import GridSearchCV
 
 def run_program(main):
+    """
+
     atd = AwsToDf()
     X_train = atd.files_to_df('prod_mb/data_source/machine_learning_data', 'X_train_nw.csv', 'csv', has_header=True)
     X_val = atd.files_to_df('prod_mb/data_source/machine_learning_data', 'X_val.csv', 'csv', has_header=True)
@@ -70,7 +72,42 @@ def run_program(main):
 
     print(X_train.columns)
 
+    """
+    atd = AwsToDf()
+    new_df = atd.files_to_df('prod_mb/data_source/machine_learning_data', 'ML_df3.csv', 'csv', has_header=True)
+    segment_df = atd.files_to_df('prod_mb/data_source/machine_learning_data', 'segment.csv', 'csv', has_header=True)
+    mrkt_hh = atd.files_to_df('prod_mb/data_source/machine_learning_data', 'market_hh.csv', 'csv', has_header=True)
+    df = atd.sql_to_df('test_sql')
+    pd.set_option('display.max_columns', None)
+    print(df.head())
+    # Genre df
+    genre_df = df[['genre_id','genre_name']]
+    print(genre_df.head())
+    print('check 1')
 
+    # Converting time to hour of day
+    new_df['time'] = pd.to_datetime(new_df['time'])
+    new_df['hour_of_day'] = new_df['time'].dt.hour
+    new_df = new_df.drop(['time', 'Unnamed: 0'], axis=1)
+
+    # Merge
+    n_df = new_df.merge(segment_df, on="hh_id", how='left')
+    n_df = n_df.merge(mrkt_hh, on='hh_id', how='left')
+    n_df = n_df.merge(genre_df, on='genre_id', how='left')
+    print(n_df.head())
+
+
+
+
+
+
+
+
+
+
+
+
+    print("Break")
 #MLP model
     # Neurons per layer = 100
     tf.random.set_seed(42)
