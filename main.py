@@ -48,8 +48,8 @@ from sklearn.metrics import make_scorer
 from sklearn.model_selection import GridSearchCV
 
 def run_program(main):
-    """
 
+    """
     atd = AwsToDf()
     X_train = atd.files_to_df('prod_mb/data_source/machine_learning_data', 'X_train_nw.csv', 'csv', has_header=True)
     X_val = atd.files_to_df('prod_mb/data_source/machine_learning_data', 'X_val.csv', 'csv', has_header=True)
@@ -77,24 +77,33 @@ def run_program(main):
     new_df = atd.files_to_df('prod_mb/data_source/machine_learning_data', 'ML_df3.csv', 'csv', has_header=True)
     segment_df = atd.files_to_df('prod_mb/data_source/machine_learning_data', 'segment.csv', 'csv', has_header=True)
     mrkt_hh = atd.files_to_df('prod_mb/data_source/machine_learning_data', 'market_hh.csv', 'csv', has_header=True)
+    genre_df = atd.files_to_df('prod_mb/data_source/machine_learning_data', 'genre_df.csv','csv', has_header=True)
     df = atd.sql_to_df('test_sql')
     pd.set_option('display.max_columns', None)
     print(df.head())
     # Genre df
+    """
     genre_df = df[['genre_id','genre_name']]
-    print(genre_df.head())
+    genre_df = genre_df.groupby('genre_id')['genre_name'].first().reset_index()
+
+    doggo = PandasDoggo()
+    path = "s3://csmediabrain-mediabrain/prod_mb/data_source/machine_learning_data/genre_df.csv"
+    doggo.save(genre_df, path)
+    """
     print('check 1')
 
-    # Converting time to hour of day
-    new_df['time'] = pd.to_datetime(new_df['time'])
-    new_df['hour_of_day'] = new_df['time'].dt.hour
-    new_df = new_df.drop(['time', 'Unnamed: 0'], axis=1)
+    # Creating watched for EDA
+    watch = new_df[new_df['watched'] == 1]
+    g_watch = watch[['hh_id','genre_id','network_id']]
+    g_watch = g_watch.merge(genre_df, on='genre_id', how='left')
 
-    # Merge
-    n_df = new_df.merge(segment_df, on="hh_id", how='left')
-    n_df = n_df.merge(mrkt_hh, on='hh_id', how='left')
-    n_df = n_df.merge(genre_df, on='genre_id', how='left')
-    print(n_df.head())
+    watch['time'] = pd.to_datetime(watch['time'])
+    watch['hour_of_day'] = watch['time'].dt.hour
+    watch = watch.drop(['time'], axis=1)
+
+    print("DFs created")
+
+
 
 
 
