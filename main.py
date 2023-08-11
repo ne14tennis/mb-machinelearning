@@ -110,6 +110,16 @@ def run_program(main):
     plt.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
     plt.show()
     print('Network')
+    # State
+    data = {
+        'State Name': ['Montana', 'Michigan', 'Nebraska', 'Texas', 'Alaska'],
+        'Latitude': [46.8797, 44.3148, 41.4925, 31.9686, 64.2008],
+        'Longitude': [-110.3626, -85.6024, -99.9018, -99.9018, -149.4937]
+    }
+
+    states_df = pd.DataFrame(data)
+    print(states_df)
+
 
     # Hour of Day
     plt.figure(figsize=(10, 6))
@@ -121,10 +131,23 @@ def run_program(main):
     plt.grid(True)
     plt.show()
     print('hour of dat plot')
+    # Day
+
+    day_dist = watch['day'].value_counts()
+    plt.figure(figsize=(8, 8))
+
+    # Creating an outer circle representing the donut shape
+    outer_circle = plt.Circle((0, 0), 0.7, color='white')
+    plt.gca().add_artist(outer_circle)
+    # Create the donut chart
+    plt.pie(day_dist, labels=day_dist.index, autopct='%1.1f%%', startangle=140, pctdistance=0.85,
+            wedgeprops={'width': 0.4})
+    plt.title('Day Distribution')
+    plt.axis('equal')
+    plt.show()
 
 
 
-    # Creating watched for EDA
     # Creating watched for EDA
     # Creating watched for EDA
     # Creating watched for EDA
