@@ -206,6 +206,49 @@ def run_program(main):
     plt.tight_layout()
     plt.show()
     print("Genre: Network 5")
+    # Network Comb
+
+    n_33 = g_watch[g_watch['network_id'] == 33]
+    n_4 = g_watch[g_watch['network_id'] == 4]
+    n_5 = g_watch[g_watch['network_id'] == 5]
+
+    g_33 = n_33['genre_name'].value_counts()
+    g_4 = n_4['genre_name'].value_counts()
+    g_5 = n_5['genre_name'].value_counts()
+
+    # Create an array of genre names
+    genres = np.unique(np.concatenate((g_33.index, g_4.index, g_5.index)))
+
+    # Create arrays for genre counts for each network, filling with 0 for missing genres
+    g33_counts = np.array([g_33.get(genre, 0) for genre in genres])
+    g4_counts = np.array([g_4.get(genre, 0) for genre in genres])
+    g5_counts = np.array([g_5.get(genre, 0) for genre in genres])
+
+    # Set up the positions for the bars
+    bar_width = 0.25
+    r1 = np.arange(len(genres))
+    r2 = [x + bar_width for x in r1]
+    r3 = [x + bar_width for x in r2]
+
+    plt.figure(figsize=(12, 6))
+    plt.bar(r1, g33_counts, color='dodgerblue', width=bar_width, edgecolor='grey', label='Network 33')
+    plt.bar(r2, g4_counts, color='green', width=bar_width, edgecolor='grey', label='Network 4')
+    plt.bar(r3, g5_counts, color='orange', width=bar_width, edgecolor='grey', label='Network 5')
+
+    plt.title('Genre Distribution by Network')
+    plt.xlabel('Genre')
+    plt.ylabel('Count')
+    plt.xticks([r + bar_width for r in range(len(genres))], genres, rotation=45, ha='right')
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+    print("Network Comb")
+
+
+
+
+
+
     def cat(ser, g_watch):
 
         ser = ser['hh_id']
@@ -244,14 +287,81 @@ def run_program(main):
     plt.tight_layout()
     plt.show()
     print("Female Plot")
+    # Comb
 
-    # Child
+    m_g = male_df['genre_name'].value_counts()
+    f_g = female_df['genre_name'].value_counts()
 
+    # Create an array of genre names
+    genres = np.unique(np.concatenate((m_g.index, f_g.index)))
 
+    # Create arrays for male and female genre counts, filling with 0 for missing genres
+    m_counts = np.array([m_g.get(genre, 0) for genre in genres])
+    f_counts = np.array([f_g.get(genre, 0) for genre in genres])
+
+    # plot
+    bar_width = 0.4
+    r1 = np.arange(len(genres))
+    r2 = [x + bar_width for x in r1]
+
+    plt.figure(figsize=(12, 6))
+    plt.bar(r1, m_counts, color='blue', width=bar_width, edgecolor='grey', label='Male')
+    plt.bar(r2, f_counts, color='green', width=bar_width, edgecolor='grey', label='Female')
+
+    plt.title('Genre Distribution by Gender for Single Households')
+    plt.xlabel('Genre')
+    plt.ylabel('Count')
+    plt.xticks([r + bar_width / 2 for r in range(len(genres))], genres, rotation=45, ha='right')
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+
+    print("Male-female comb")
+    # Child in HH
+    child_df = segment_df[segment_df['677']==1]
+    child_df = cat(child_df, g_watch)
+
+    c_g = child_df['genre_name'].value_counts()
+
+    plt.figure(figsize=(10, 6))
+    plt.bar(c_g.index, c_g.values, color='orange')
+    plt.title('Genre Distribution For Households with Children')
+    plt.xlabel('Genre')
+    plt.ylabel('Count')
+    plt.xticks(rotation=45, ha='right')
+    plt.tight_layout()
+    plt.show()
+    print("Genre: Child")
     # Age group 1
+    child_df = segment_df[segment_df['677']==1]
+    child_df = cat(child_df, g_watch)
+
+    c_g = child_df['genre_name'].value_counts()
+
+    plt.figure(figsize=(10, 6))
+    plt.bar(c_g.index, c_g.values, color='orange')
+    plt.title('Genre Distribution For Households with Children')
+    plt.xlabel('Genre')
+    plt.ylabel('Count')
+    plt.xticks(rotation=45, ha='right')
+    plt.tight_layout()
+    plt.show()
+    print("Age: 18-24")
 
     # Age group 5
+    child_df = segment_df[segment_df['677']==1]
+    child_df = cat(child_df, g_watch)
 
+    c_g = child_df['genre_name'].value_counts()
+
+    plt.figure(figsize=(10, 6))
+    plt.bar(c_g.index, c_g.values, color='orange')
+    plt.title('Genre Distribution For Households with Children')
+    plt.xlabel('Genre')
+    plt.ylabel('Count')
+    plt.xticks(rotation=45, ha='right')
+    plt.tight_layout()
+    plt.show()
 
 
 
