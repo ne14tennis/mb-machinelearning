@@ -395,7 +395,7 @@ def run_program(main):
     plt.tight_layout()
     plt.show()
 
-    print("EDA Done")
+    print("Age: Comb")
     # Income group-1
     income_1 = segment_df[segment_df['376'] == 1]
     income_1 = cat(income_1, g_watch)
