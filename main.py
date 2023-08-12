@@ -157,7 +157,7 @@ def run_program(main):
     # Create the donut chart
     plt.pie(day_dist, labels=day_dist.index, autopct='%1.1f%%', startangle=140, pctdistance=0.85,
             wedgeprops={'width': 0.4})
-    plt.title('Day Distribution')
+    plt.title('TV Viewership By Day ')
     plt.axis('equal')
     plt.show()
     print("Day")
@@ -244,11 +244,6 @@ def run_program(main):
     plt.show()
     print("Network Comb")
 
-
-
-
-
-
     def cat(ser, g_watch):
 
         ser = ser['hh_id']
@@ -264,7 +259,7 @@ def run_program(main):
 
     plt.figure(figsize=(10, 6))
     plt.bar(m_g.index, m_g.values)
-    plt.title('Genre Distribution For Single Male Households')
+    plt.title('TV Viewership by Genre in Single Male Households')
     plt.xlabel('Genre')
     plt.ylabel('Count')
     plt.xticks(rotation=45, ha='right')
@@ -279,8 +274,8 @@ def run_program(main):
     f_g = female_df['genre_name'].value_counts()
 
     plt.figure(figsize=(10, 6))
-    plt.bar(f_g.index, f_g.values, colour = 'green')
-    plt.title('Genre Distribution For Single Female Households')
+    plt.bar(f_g.index, f_g.values, color = 'green')
+    plt.title('TV Viewership by Genre in Single Female Households')
     plt.xlabel('Genre')
     plt.ylabel('Count')
     plt.xticks(rotation=45, ha='right')
@@ -308,7 +303,7 @@ def run_program(main):
     plt.bar(r1, m_counts, color='blue', width=bar_width, edgecolor='grey', label='Male')
     plt.bar(r2, f_counts, color='green', width=bar_width, edgecolor='grey', label='Female')
 
-    plt.title('Genre Distribution by Gender for Single Households')
+    plt.title('Genre Distribution by Sex for Single Occupant Households')
     plt.xlabel('Genre')
     plt.ylabel('Count')
     plt.xticks([r + bar_width / 2 for r in range(len(genres))], genres, rotation=45, ha='right')
@@ -325,7 +320,7 @@ def run_program(main):
 
     plt.figure(figsize=(10, 6))
     plt.bar(c_g.index, c_g.values, color='orange')
-    plt.title('Genre Distribution For Households with Children')
+    plt.title('TV Viewership by Genre for Households with Children')
     plt.xlabel('Genre')
     plt.ylabel('Count')
     plt.xticks(rotation=45, ha='right')
@@ -401,9 +396,76 @@ def run_program(main):
     plt.show()
 
     print("EDA Done")
+    # Income group-1
+    income_1 = segment_df[segment_df['376'] == 1]
+    income_1 = cat(income_1, g_watch)
 
-    # Creating watched for EDA
+    income_g1 = income_1['genre_name'].value_counts()
 
+    total_viewership = income_g1.sum()
+    genre_proportions = income_g1 / total_viewership
+
+    plt.figure(figsize=(10, 6))
+    plt.bar(genre_proportions.index, genre_proportions.values, color='lightblue')
+    plt.title('Genre Distribution Proportion for Households in the Income Bracket: $20,000- 29,00')
+    plt.xlabel('Genre')
+    plt.ylabel('Proportion')
+    plt.xticks(rotation=45, ha='right')
+    plt.tight_layout()
+    plt.show()
+    print("Income: $20,000- 29,000")
+    # Income Group: 250k+ (proportion of genre viewership)
+    income_l = segment_df[segment_df['386'] == 1]
+    income_l = cat(income_l, g_watch)
+
+    income_lg = income_l['genre_name'].value_counts()
+
+    total_viewership = income_lg.sum()
+    genre_proportions = income_lg / total_viewership
+
+    plt.figure(figsize=(10, 6))
+    plt.bar(genre_proportions.index, genre_proportions.values, color='blue')
+    plt.title('Genre Distribution Proportion for the Income Bracket: $250,000+')
+    plt.xlabel('Genre')
+    plt.ylabel('Proportion')
+    plt.xticks(rotation=45, ha='right')
+    plt.tight_layout()
+    plt.show()
+    print("Income Bracket: $250,000+")
+
+    # Comb: Income
+
+    total_viewership_g1 = income_g1.sum()  # Total viewership within income group $20,000-$29,999
+    total_viewership_lg = income_lg.sum()  # Total viewership within income group $250,000+
+
+    genre_proportions_g1 = income_g1 / total_viewership_g1
+    genre_proportions_lg = income_lg / total_viewership_lg
+
+    # Create an array of genre names
+    genres = np.unique(np.concatenate((genre_proportions_g1.index, genre_proportions_lg.index)))
+
+    # Create arrays for genre proportions for each income group, filling with 0 for missing genres
+    g1_proportions = np.array([genre_proportions_g1.get(genre, 0) for genre in genres])
+    lg_proportions = np.array([genre_proportions_lg.get(genre, 0) for genre in genres])
+
+    # Set up the positions for the bars
+    bar_width = 0.4
+    r1 = np.arange(len(genres))
+    r2 = [x + bar_width for x in r1]
+
+    plt.figure(figsize=(12, 6))
+    plt.bar(r1, g1_proportions, color='lightblue', width=bar_width, edgecolor='grey', label='Income: $20,000-$29,999')
+    plt.bar(r2, lg_proportions, color='blue', width=bar_width, edgecolor='grey', label='Income: $250,000+')
+
+    plt.title('Genre Viewership Proportion by Income Group')
+    plt.xlabel('Genre')
+    plt.ylabel('Proportion')
+    plt.xticks([r + bar_width / 2 for r in range(len(genres))], genres, rotation=45, ha='right')
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+
+    print("EDA Done")
 
 
 
