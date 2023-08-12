@@ -333,37 +333,74 @@ def run_program(main):
     plt.show()
     print("Genre: Child")
     # Age group 1
-    child_df = segment_df[segment_df['677']==1]
-    child_df = cat(child_df, g_watch)
+    age_1 = segment_df[segment_df['644'] == 1]
+    age_1 = cat(age_1, g_watch)
 
-    c_g = child_df['genre_name'].value_counts()
+    age_g1 = age_1['genre_name'].value_counts()
+
+    total_viewership = age_g1.sum()
+    genre_proportions = age_g1 / total_viewership
 
     plt.figure(figsize=(10, 6))
-    plt.bar(c_g.index, c_g.values, color='orange')
-    plt.title('Genre Distribution For Households with Children')
+    plt.bar(genre_proportions.index, genre_proportions.values, color='purple')
+    plt.title('Genre Distribution Proportion for Households having Age Group 18-24')
     plt.xlabel('Genre')
-    plt.ylabel('Count')
+    plt.ylabel('Proportion')
     plt.xticks(rotation=45, ha='right')
     plt.tight_layout()
     plt.show()
     print("Age: 18-24")
+    # Age group 5 (proportion of genre viwership)
+    age_5 = segment_df[segment_df['648'] == 1]
+    age_5 = cat(age_5, g_watch)
 
-    # Age group 5
-    child_df = segment_df[segment_df['677']==1]
-    child_df = cat(child_df, g_watch)
+    age_g5 = age_5['genre_name'].value_counts()
 
-    c_g = child_df['genre_name'].value_counts()
+    total_viewership = age_g5.sum()
+    genre_proportions = age_g5 / total_viewership
 
     plt.figure(figsize=(10, 6))
-    plt.bar(c_g.index, c_g.values, color='orange')
-    plt.title('Genre Distribution For Households with Children')
+    plt.bar(genre_proportions.index, genre_proportions.values, color='violet')
+    plt.title('Genre Distribution Proportion for Age Group 65+')
     plt.xlabel('Genre')
-    plt.ylabel('Count')
+    plt.ylabel('Proportion')
     plt.xticks(rotation=45, ha='right')
     plt.tight_layout()
     plt.show()
+    print("Age: 65+")
+    # Comb: ages
 
+    total_viewership_g1 = age_g1.sum()
+    total_viewership_g5 = age_g5.sum()
 
+    genre_proportions_g1 = age_g1 / total_viewership_g1
+    genre_proportions_g5 = age_g5 / total_viewership_g5
+
+    # Create an array of genre names
+    genres = np.unique(np.concatenate((genre_proportions_g1.index, genre_proportions_g5.index)))
+
+    # Create arrays for genre proportions for each age group, filling with 0 for missing genres
+    g1_proportions = np.array([genre_proportions_g1.get(genre, 0) for genre in genres])
+    g5_proportions = np.array([genre_proportions_g5.get(genre, 0) for genre in genres])
+
+    # Set up the positions for the bars
+    bar_width = 0.4
+    r1 = np.arange(len(genres))
+    r2 = [x + bar_width for x in r1]
+
+    plt.figure(figsize=(12, 6))
+    plt.bar(r1, g1_proportions, color='purple', width=bar_width, edgecolor='grey', label='Age: 18-24')
+    plt.bar(r2, g5_proportions, color='violet', width=bar_width, edgecolor='grey', label='Age: 65+')
+
+    plt.title('Genre Contribution Proportion by Age Group')
+    plt.xlabel('Genre')
+    plt.ylabel('Proportion')
+    plt.xticks([r + bar_width / 2 for r in range(len(genres))], genres, rotation=45, ha='right')
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+
+    print("EDA Done")
 
     # Creating watched for EDA
 
