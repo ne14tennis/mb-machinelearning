@@ -92,6 +92,7 @@ def run_program(main):
     print('check 1')
 
     # Creating watched for EDA
+    genre_df = genre_df.drop(['Unnamed: 0'], axis = 1)
     watch = new_df[new_df['watched'] == 1]
     g_watch = watch[['hh_id','genre_id','network_id']]
     g_watch = g_watch.merge(genre_df, on='genre_id', how='left')
@@ -205,16 +206,48 @@ def run_program(main):
     plt.tight_layout()
     plt.show()
     print("Genre: Network 5")
+    def cat(ser, g_watch):
+
+        ser = ser['hh_id']
+        ser = ser.to_frame()
+        c = ser.merge(g_watch, on='hh_id', how='left')
+        return c
 
     # 1 Male only (585)
     male_df = segment_df[segment_df['585']==1]
-    male_df = male_df['hh_id']
+    male_df = cat(male_df, g_watch)
 
+    m_g = male_df['genre_name'].value_counts()
 
+    plt.figure(figsize=(10, 6))
+    plt.bar(m_g.index, m_g.values)
+    plt.title('Genre Distribution For Single Male Households')
+    plt.xlabel('Genre')
+    plt.ylabel('Count')
+    plt.xticks(rotation=45, ha='right')
+    plt.tight_layout()
+    plt.show()
+    print("Male:Genre Distribution")
 
     # 1 Female only (586)
+    female_df = segment_df[segment_df['586']==1]
+    female_df = cat(female_df, g_watch)
+
+    f_g = female_df['genre_name'].value_counts()
+
+    plt.figure(figsize=(10, 6))
+    plt.bar(f_g.index, f_g.values, colour = 'green')
+    plt.title('Genre Distribution For Single Female Households')
+    plt.xlabel('Genre')
+    plt.ylabel('Count')
+    plt.xticks(rotation=45, ha='right')
+    plt.tight_layout()
+    plt.show()
+    print("Female Plot")
 
     # Child
+
+
     # Age group 1
 
     # Age group 5
