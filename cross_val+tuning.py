@@ -583,7 +583,8 @@ class a3:
         print(confusion_matrix(y_val, binary_preds_rounded))
         print("F1-score: {:.5f}".format(f1))
         print("F1-score: {:.5f}".format(f1))
-    # Epochs = 300 with early stopping where patience = 10
+
+    # Epochs = 200 with early stopping where patience = 10
     
         tf.random.set_seed(42)
         np.random.seed(42)
@@ -605,10 +606,10 @@ class a3:
                                tf.keras.metrics.Recall()])
     
         # Define early stopping
-        early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=20)
+        early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=10)
     
         # Train the model
-        history = model.fit(X_train, y_train, epochs=300, batch_size=32, validation_data=(X_val, y_val),
+        history = model.fit(X_train, y_train, epochs=200, batch_size=32, validation_data=(X_val, y_val),
                             callbacks=[early_stopping], verbose=2)
     
         # Evaluate the model on the test set
@@ -629,7 +630,51 @@ class a3:
         print(confusion_matrix(y_val, binary_preds_rounded))
         print("F1-score: {:.5f}".format(f1))
         print("F1-score: {:.5f}".format(f1))
-    
+
+    # Epochs = 200
+
+        tf.random.set_seed(42)
+        np.random.seed(42)
+        norm_layer = tf.keras.layers.Normalization(input_shape=X_train.shape[1:])
+        # Model architecture
+        model = tf.keras.Sequential([
+            norm_layer,
+            tf.keras.layers.Dense(100, activation='relu', input_shape=(X_train.shape[1],)),
+            tf.keras.layers.Dense(100, activation='relu'),
+            tf.keras.layers.Dense(1, activation='sigmoid')
+        ])
+
+        # Defining the optimizer with a learning rate of 0.01
+        optimizer = tf.keras.optimizers.SGD(learning_rate=0.01)
+
+        # Compiling the model with binary cross-entropy loss and Binary_Accuracy as the metric
+        model.compile(loss='binary_crossentropy', optimizer=optimizer,
+                      metrics=[tf.keras.metrics.BinaryAccuracy(), tf.keras.metrics.Precision(),
+                               tf.keras.metrics.Recall()])
+
+        # Train the model
+        history = model.fit(X_train, y_train, epochs=100, batch_size=36, validation_data=(X_val, y_val), verbose=2)
+
+        # Evaluate the model on the test set
+        loss, binary_accuracy, precision, recall = model.evaluate(X_test, y_test)
+        print("Binary Cross-Entropy Loss:", round(loss, 7))
+        print("Binary Accuracy on test set:", round(binary_accuracy, 7))
+        print("Precision on test set:", round(precision, 7))
+        print("Recall on test set:", round(recall, 7))
+
+        # Make predictions on the test set
+        binary_preds = model.predict(X_test)
+        # Round the predictions to get the binary class labels (0 or 1)
+        binary_preds_rounded = [1 if pred > 0.5 else 0 for pred in binary_preds]
+
+        # Calculate F1-score for binary classification
+        f1 = f1_score(y_val, binary_preds_rounded)
+        print("Confusion Matrix:")
+        print(confusion_matrix(y_val, binary_preds_rounded))
+        print("F1-score: {:.5f}".format(f1))
+
+
+
     #LR: 0.1
     
         tf.random.set_seed(42)

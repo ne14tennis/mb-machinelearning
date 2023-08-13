@@ -5,14 +5,13 @@ import numpy as np
 # Loading, converting, saving libraries
 from aws_to_df import AwsToDf
 from newtools import PandasDoggo
-
 from aws_to_df import AwsToDf
-
 
 # Libraries for Plots/Data Visualisations
 import matplotlib.pyplot as plt
 from matplotlib import pyplot
 import seaborn as sns
+
 
 # Libraries for Modelling
 from sklearn.linear_model import LogisticRegression
@@ -49,7 +48,7 @@ from sklearn.model_selection import GridSearchCV
 
 def run_program(main):
 
-    """
+
     atd = AwsToDf()
     X_train = atd.files_to_df('prod_mb/data_source/machine_learning_data', 'X_train_nw.csv', 'csv', has_header=True)
     X_val = atd.files_to_df('prod_mb/data_source/machine_learning_data', 'X_val.csv', 'csv', has_header=True)
@@ -71,428 +70,90 @@ def run_program(main):
     y_val = y_val.drop(["Unnamed: 0"], axis = 1)
 
     print(X_train.columns)
-
-    """
-    atd = AwsToDf()
-    new_df = atd.files_to_df('prod_mb/data_source/machine_learning_data', 'ML_df3.csv', 'csv', has_header=True)
-    segment_df = atd.files_to_df('prod_mb/data_source/machine_learning_data', 'segment.csv', 'csv', has_header=True)
-    mrkt_hh = atd.files_to_df('prod_mb/data_source/machine_learning_data', 'market_hh.csv', 'csv', has_header=True)
-    genre_df = atd.files_to_df('prod_mb/data_source/machine_learning_data', 'genre_df.csv','csv', has_header=True)
-    pd.set_option('display.max_columns', None)
-    print('check')
-    # Genre df
-    """
-    genre_df = df[['genre_id','genre_name']]
-    genre_df = genre_df.groupby('genre_id')['genre_name'].first().reset_index()
-
-    doggo = PandasDoggo()
-    path = "s3://csmediabrain-mediabrain/prod_mb/data_source/machine_learning_data/genre_df.csv"
-    doggo.save(genre_df, path)
-    """
-    print('check 1')
-
-    # Creating watched for EDA
-    genre_df = genre_df.drop(['Unnamed: 0'], axis = 1)
-    watch = new_df[new_df['watched'] == 1]
-    g_watch = watch[['hh_id','genre_id','network_id']]
-    g_watch = g_watch.merge(genre_df, on='genre_id', how='left')
-
-    watch['time'] = pd.to_datetime(watch['time'])
-    watch['hour_of_day'] = watch['time'].dt.hour
-    watch = watch.drop(['time'], axis=1)
-
-    print("DFs created")
-    # Network
-
-    network_distribution = watch['network_id'].value_counts()
-    plt.figure(figsize=(8, 8))
-    plt.pie(network_distribution, labels=network_distribution.index, autopct='%1.1f%%', startangle=140)
-    plt.title('Network Distribution')
-    plt.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
-    plt.show()
-    print('Network')
-    # Genre
-    genre_distribution = g_watch['genre_name'].value_counts()
-
-    plt.figure(figsize=(10, 6))
-    plt.bar(genre_distribution.index, genre_distribution.values)
-    plt.title('Genre Distribution')
-    plt.xlabel('Genre')
-    plt.ylabel('Count')
-    plt.xticks(rotation=45, ha='right')  # Rotate labels for better readability
-    plt.tight_layout()  # Adjust layout for better spacing
-    plt.show()
-    print('Genre')
-    # State
-    """
-    data = {
-        'State Name': ['Montana', 'Michigan', 'Nebraska', 'Texas', 'Alaska'],
-        'Latitude': [46.8797, 44.3148, 41.4925, 31.9686, 64.2008],
-        'Longitude': [-110.3626, -85.6024, -99.9018, -99.9018, -149.4937]
-    }
-
-    states_df = pd.DataFrame(data)
-    
-    print(states_df)
-    """
-    # Hour of Day
-
-    plt.figure(figsize=(10, 6))
-    sns.lineplot(x=watch['hour_of_day'].value_counts().index, y=watch['hour_of_day'].value_counts().values, marker="o")
-    plt.title('TV Programme Viewership By Hour ')
-    plt.xlabel('Hour of Day')
-    plt.ylabel('Count')
-    plt.xticks(range(1, 25))
-    plt.grid(True)
-    plt.show()
-    print('hour of day plot')
-    # Day
-
-    day_dist = watch['day'].value_counts()
-    plt.figure(figsize=(8, 8))
-
-    # Creating an outer circle representing the donut shape
-    outer_circle = plt.Circle((0, 0), 0.7, color='white')
-    plt.gca().add_artist(outer_circle)
-    # Create the donut chart
-    plt.pie(day_dist, labels=day_dist.index, autopct='%1.1f%%', startangle=140, pctdistance=0.85,
-            wedgeprops={'width': 0.4})
-    plt.title('TV Viewership By Day ')
-    plt.axis('equal')
-    plt.show()
-    print("Day")
-    # Genre per network
-
-    # 33
-    n_33 = g_watch[g_watch['network_id'] == 33]
-
-    g_33 = n_33['genre_name'].value_counts()
-
-    plt.figure(figsize=(10, 6))
-    plt.bar(g_33.index, g_33.values)
-    plt.title('Genre Distribution For Network 33')
-    plt.xlabel('Genre')
-    plt.ylabel('Count')
-    plt.xticks(rotation=45, ha='right')
-    plt.tight_layout()
-    plt.show()
-    print("Genre: Network 33")
-    # 4
-    n_4 = g_watch[g_watch['network_id'] == 4]
-
-    g_4 = n_4['genre_name'].value_counts()
-
-    plt.figure(figsize=(10, 6))
-    plt.bar(g_4.index, g_4.values)
-    plt.title('Genre Distribution For Network 4')
-    plt.xlabel('Genre')
-    plt.ylabel('Count')
-    plt.xticks(rotation=45, ha='right')
-    plt.tight_layout()
-    plt.show()
-
-    print("Genre: Network 4")
-    # 5
-    n_5 = g_watch[g_watch['network_id'] == 5]
-
-    g_5 = n_5['genre_name'].value_counts()
-
-    plt.figure(figsize=(10, 6))
-    plt.bar(g_5.index, g_5.values)
-    plt.title('Genre Distribution For Network 5')
-    plt.xlabel('Genre')
-    plt.ylabel('Count')
-    plt.xticks(rotation=45, ha='right')
-    plt.tight_layout()
-    plt.show()
-    print("Genre: Network 5")
-    # Network Comb
-
-    n_33 = g_watch[g_watch['network_id'] == 33]
-    n_4 = g_watch[g_watch['network_id'] == 4]
-    n_5 = g_watch[g_watch['network_id'] == 5]
-
-    g_33 = n_33['genre_name'].value_counts()
-    g_4 = n_4['genre_name'].value_counts()
-    g_5 = n_5['genre_name'].value_counts()
-
-    # Create an array of genre names
-    genres = np.unique(np.concatenate((g_33.index, g_4.index, g_5.index)))
-
-    # Create arrays for genre counts for each network, filling with 0 for missing genres
-    g33_counts = np.array([g_33.get(genre, 0) for genre in genres])
-    g4_counts = np.array([g_4.get(genre, 0) for genre in genres])
-    g5_counts = np.array([g_5.get(genre, 0) for genre in genres])
-
-    # Set up the positions for the bars
-    bar_width = 0.25
-    r1 = np.arange(len(genres))
-    r2 = [x + bar_width for x in r1]
-    r3 = [x + bar_width for x in r2]
-
-    plt.figure(figsize=(12, 6))
-    plt.bar(r1, g33_counts, color='dodgerblue', width=bar_width, edgecolor='grey', label='Network 33')
-    plt.bar(r2, g4_counts, color='green', width=bar_width, edgecolor='grey', label='Network 4')
-    plt.bar(r3, g5_counts, color='orange', width=bar_width, edgecolor='grey', label='Network 5')
-
-    plt.title('Genre Distribution by Network')
-    plt.xlabel('Genre')
-    plt.ylabel('Count')
-    plt.xticks([r + bar_width for r in range(len(genres))], genres, rotation=45, ha='right')
-    plt.legend()
-    plt.tight_layout()
-    plt.show()
-    print("Network Comb")
-
-    def cat(ser, g_watch):
-
-        ser = ser['hh_id']
-        ser = ser.to_frame()
-        c = ser.merge(g_watch, on='hh_id', how='left')
-        return c
-
-    # 1 Male only (585)
-    male_df = segment_df[segment_df['585']==1]
-    male_df = cat(male_df, g_watch)
-
-    m_g = male_df['genre_name'].value_counts()
-
-    plt.figure(figsize=(10, 6))
-    plt.bar(m_g.index, m_g.values)
-    plt.title('TV Viewership by Genre in Single Male Households')
-    plt.xlabel('Genre')
-    plt.ylabel('Count')
-    plt.xticks(rotation=45, ha='right')
-    plt.tight_layout()
-    plt.show()
-    print("Male:Genre Distribution")
-
-    # 1 Female only (586)
-    female_df = segment_df[segment_df['586']==1]
-    female_df = cat(female_df, g_watch)
-
-    f_g = female_df['genre_name'].value_counts()
-
-    plt.figure(figsize=(10, 6))
-    plt.bar(f_g.index, f_g.values, color = 'green')
-    plt.title('TV Viewership by Genre in Single Female Households')
-    plt.xlabel('Genre')
-    plt.ylabel('Count')
-    plt.xticks(rotation=45, ha='right')
-    plt.tight_layout()
-    plt.show()
-    print("Female Plot")
-    # Comb
-
-    m_g = male_df['genre_name'].value_counts()
-    f_g = female_df['genre_name'].value_counts()
-
-    # Create an array of genre names
-    genres = np.unique(np.concatenate((m_g.index, f_g.index)))
-
-    # Create arrays for male and female genre counts, filling with 0 for missing genres
-    m_counts = np.array([m_g.get(genre, 0) for genre in genres])
-    f_counts = np.array([f_g.get(genre, 0) for genre in genres])
-
-    # plot
-    bar_width = 0.4
-    r1 = np.arange(len(genres))
-    r2 = [x + bar_width for x in r1]
-
-    plt.figure(figsize=(12, 6))
-    plt.bar(r1, m_counts, color='blue', width=bar_width, edgecolor='grey', label='Male')
-    plt.bar(r2, f_counts, color='green', width=bar_width, edgecolor='grey', label='Female')
-
-    plt.title('Genre Distribution by Sex for Single Occupant Households')
-    plt.xlabel('Genre')
-    plt.ylabel('Count')
-    plt.xticks([r + bar_width / 2 for r in range(len(genres))], genres, rotation=45, ha='right')
-    plt.legend()
-    plt.tight_layout()
-    plt.show()
-
-    print("Male-female comb")
-    # Child in HH
-    child_df = segment_df[segment_df['677']==1]
-    child_df = cat(child_df, g_watch)
-
-    c_g = child_df['genre_name'].value_counts()
-
-    plt.figure(figsize=(10, 6))
-    plt.bar(c_g.index, c_g.values, color='orange')
-    plt.title('TV Viewership by Genre for Households with Children')
-    plt.xlabel('Genre')
-    plt.ylabel('Count')
-    plt.xticks(rotation=45, ha='right')
-    plt.tight_layout()
-    plt.show()
-    print("Genre: Child")
-    # Age group 1
-    age_1 = segment_df[segment_df['644'] == 1]
-    age_1 = cat(age_1, g_watch)
-
-    age_g1 = age_1['genre_name'].value_counts()
-
-    total_viewership = age_g1.sum()
-    genre_proportions = age_g1 / total_viewership
-
-    plt.figure(figsize=(10, 6))
-    plt.bar(genre_proportions.index, genre_proportions.values, color='purple')
-    plt.title('Genre Distribution Proportion for Households having Age Group 18-24')
-    plt.xlabel('Genre')
-    plt.ylabel('Proportion')
-    plt.xticks(rotation=45, ha='right')
-    plt.tight_layout()
-    plt.show()
-    print("Age: 18-24")
-    # Age group 5 (proportion of genre viwership)
-    age_5 = segment_df[segment_df['648'] == 1]
-    age_5 = cat(age_5, g_watch)
-
-    age_g5 = age_5['genre_name'].value_counts()
-
-    total_viewership = age_g5.sum()
-    genre_proportions = age_g5 / total_viewership
-
-    plt.figure(figsize=(10, 6))
-    plt.bar(genre_proportions.index, genre_proportions.values, color='violet')
-    plt.title('Genre Distribution Proportion for Age Group 65+')
-    plt.xlabel('Genre')
-    plt.ylabel('Proportion')
-    plt.xticks(rotation=45, ha='right')
-    plt.tight_layout()
-    plt.show()
-    print("Age: 65+")
-    # Comb: ages
-
-    total_viewership_g1 = age_g1.sum()
-    total_viewership_g5 = age_g5.sum()
-
-    genre_proportions_g1 = age_g1 / total_viewership_g1
-    genre_proportions_g5 = age_g5 / total_viewership_g5
-
-    # Create an array of genre names
-    genres = np.unique(np.concatenate((genre_proportions_g1.index, genre_proportions_g5.index)))
-
-    # Create arrays for genre proportions for each age group, filling with 0 for missing genres
-    g1_proportions = np.array([genre_proportions_g1.get(genre, 0) for genre in genres])
-    g5_proportions = np.array([genre_proportions_g5.get(genre, 0) for genre in genres])
-
-    # Set up the positions for the bars
-    bar_width = 0.4
-    r1 = np.arange(len(genres))
-    r2 = [x + bar_width for x in r1]
-
-    plt.figure(figsize=(12, 6))
-    plt.bar(r1, g1_proportions, color='purple', width=bar_width, edgecolor='grey', label='Age: 18-24')
-    plt.bar(r2, g5_proportions, color='violet', width=bar_width, edgecolor='grey', label='Age: 65+')
-
-    plt.title('Genre Contribution Proportion by Age Group')
-    plt.xlabel('Genre')
-    plt.ylabel('Proportion')
-    plt.xticks([r + bar_width / 2 for r in range(len(genres))], genres, rotation=45, ha='right')
-    plt.legend()
-    plt.tight_layout()
-    plt.show()
-
-    print("Age: Comb")
-    # Income group-1
-    income_1 = segment_df[segment_df['376'] == 1]
-    income_1 = cat(income_1, g_watch)
-
-    income_g1 = income_1['genre_name'].value_counts()
-
-    total_viewership = income_g1.sum()
-    genre_proportions = income_g1 / total_viewership
-
-    plt.figure(figsize=(10, 6))
-    plt.bar(genre_proportions.index, genre_proportions.values, color='lightblue')
-    plt.title('Genre Distribution Proportion for Households in the Income Bracket: $20,000- 29,00')
-    plt.xlabel('Genre')
-    plt.ylabel('Proportion')
-    plt.xticks(rotation=45, ha='right')
-    plt.tight_layout()
-    plt.show()
-    print("Income: $20,000- 29,000")
-    # Income Group: 250k+ (proportion of genre viewership)
-    income_l = segment_df[segment_df['386'] == 1]
-    income_l = cat(income_l, g_watch)
-
-    income_lg = income_l['genre_name'].value_counts()
-
-    total_viewership = income_lg.sum()
-    genre_proportions = income_lg / total_viewership
-
-    plt.figure(figsize=(10, 6))
-    plt.bar(genre_proportions.index, genre_proportions.values, color='blue')
-    plt.title('Genre Distribution Proportion for the Income Bracket: $250,000+')
-    plt.xlabel('Genre')
-    plt.ylabel('Proportion')
-    plt.xticks(rotation=45, ha='right')
-    plt.tight_layout()
-    plt.show()
-    print("Income Bracket: $250,000+")
-
-    # Comb: Income
-
-    total_viewership_g1 = income_g1.sum()  # Total viewership within income group $20,000-$29,999
-    total_viewership_lg = income_lg.sum()  # Total viewership within income group $250,000+
-
-    genre_proportions_g1 = income_g1 / total_viewership_g1
-    genre_proportions_lg = income_lg / total_viewership_lg
-
-    # Create an array of genre names
-    genres = np.unique(np.concatenate((genre_proportions_g1.index, genre_proportions_lg.index)))
-
-    # Create arrays for genre proportions for each income group, filling with 0 for missing genres
-    g1_proportions = np.array([genre_proportions_g1.get(genre, 0) for genre in genres])
-    lg_proportions = np.array([genre_proportions_lg.get(genre, 0) for genre in genres])
-
-    # Set up the positions for the bars
-    bar_width = 0.4
-    r1 = np.arange(len(genres))
-    r2 = [x + bar_width for x in r1]
-
-    plt.figure(figsize=(12, 6))
-    plt.bar(r1, g1_proportions, color='lightblue', width=bar_width, edgecolor='grey', label='Income: $20,000-$29,999')
-    plt.bar(r2, lg_proportions, color='blue', width=bar_width, edgecolor='grey', label='Income: $250,000+')
-
-    plt.title('Genre Viewership Proportion by Income Group')
-    plt.xlabel('Genre')
-    plt.ylabel('Proportion')
-    plt.xticks([r + bar_width / 2 for r in range(len(genres))], genres, rotation=45, ha='right')
-    plt.legend()
-    plt.tight_layout()
-    plt.show()
-
-    print("EDA Done")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    # Chi-squared 300 feature names
+    new_names = [ 'is_latest_season', 'is_national', 'hour_of_day', '376', '377', '378',
+    '386', '493', '585', '649', '2382', '2383', '2384', '3630', '3633',
+    '3637', '3645', '3646', '3656', '5038', '5043', '5070', '10946',
+    '53749', '53750', '53751', '64893', '79929', '79931', '79934', 'Friday',
+    'Monday', 'Saturday', 'Sunday', 'Thursday', 'Tuesday', 'Wednesday',
+    'h 100172451', 'h 100318334', 'h 106306721', 'h 106308521',
+    'h 107043460', 'h 107434320', 'h 109046304', 'h 110590951',
+    'h 110788150', 'h 111285788', 'h 112227013', 'h 115565015',
+    'h 115742946',
+    'h 115837803', 'h 115885426', 'h 116004824', 'h 116488929',
+    'h 125514781', 'h 125807126', 'h 165898931', 'h 167160672',
+    'h 167514439', 'h 167839487', 'h 167917001', 'h 170268898',
+    'h 172083888', 'h 173055791', 'h 2632155', 'h 35928955', 'h 36074620',
+    'h 36280817', 'h 36648962', 'h 36683815', 'h 36799727', 'h 37322640',
+    'h 37776317', 'h 37890042', 'h 38051546', 'h 39292432', 'h 46572705',
+    'h 46842762', 'h 47101504', 'h 47650429', 'h 47830694', 'h 47878021',
+    'h 48636316', 'h 48842286', 'h 48891969', 'h 48931642', 'h 48946919',
+    'h 48999040', 'h 49160365', 'h 49339329', 'h 49447347', 'h 49616626',
+    'h 49791131', 'h 50768362', 'h 50905501', 'h 50918177', 'h 51674347',
+    'h 51674918', 'h 51741527', 'h 52146982',
+    'h 52388485', 'h 53963599', 'h 54023407', 'h 54120731', 'h 54717301',
+     'h 55494075', 'h 55500128', 'h 55539553', 'h 55814419', 'h 56008797',
+     'h 56050804', 'h 56135757', 'h 56360685', 'h 56537778', 'h 56693912',
+     'h 56853304', 'h 56885748', 'h 56924259', 'h 57274298', 'h 57480793',
+     'h 57579254', 'h 57592566', 'h 57600223', 'h 57622186', 'h 57643519',
+     'h 57741341', 'h 57749081', 'h 58277309', 'h 58717993', 'h 59031388',
+     'h 59109678', 'h 59114829', 'h 59319212', 'h 59881658', 'h 59988152',
+     'h 60243206', 'h 60641874', 'h 60669224', 'h 60823025', 'h 60844917',
+     'h 61312789', 'h 61333557', 'h 61554804', 'h 61637075', 'h 62561554',
+     'h 62890430', 'h 63142558', 'h 63270041', 'h 64448593', 'h 64547438',
+    'h 64651548', 'h 64670207', 'h 64795412', 'h 64920613', 'h 65338118',
+     'h 65601007', 'h 65909820', 'h 66206556', 'h 66255849', 'h 66425354',
+     'h 66434011', 'h 67243422', 'h 67568449', 'h 67757110', 'h 67927920',
+     'h 67982228', 'h 68221055', 'h 68489793', 'h 68512332', 'h 68998524',
+     'h 69292040', 'h 69988471', 'h 69989997', 'h 70003848', 'h 70025619',
+     'h 70051375', 'h 70081131', 'h 70084286', 'h 70258850', 'h 70553680',
+     'h 70740042', 'h 70783562', 'h 70808979', 'h 70867299', 'h 71162977',
+     'h 72134555', 'h 72226381', 'h 72434949', 'h 72516526', 'h 72574311',
+     'h 72631321', 'h 72700283', 'h 73399516', 'h 73874081', 'h 73898027',
+     'h 75234809', 'h 75571504', 'h 75930190', 'h 76012513', 'h 77153099',
+     'h 78535346', 'h 78734284', 'h 79550177', 'h 79980408', 'h 80339662',
+     'h 81371160', 'h 85016297', 'h 90776857', 'h 91297905', 'h 91493515',
+     'h 91509340', 'h 91908121', 'h 91958986', 'h 92643920', 'h 93079773',
+     'h 93583160', 'h 93837110', 'h 97212190', 'h 97672913', 'h 98700821',
+     'h 98931594', 'h 99358595', 'n 33', 'n 4', 'n 5', 'st -51039',
+     'st -57526', 'st 10079', 'st 10695', 'st 12340', 'st 12770', 'st 13496',
+     'st 19462', 'st 26078', 'st 26089', 'st 26912', 'st 28922', 'st 4203',
+     'st 42032', 'st 4207', 'st 4343', 'st 4491', 'st 4576', 'st 5156',
+     'st 5209', 'st 5289', 'st 5314', 'st 5356', 'st 5393', 'st 5554',
+    'st 5652', 'st 5739', 'st 6421', 'st 6704', 'st 9108', 'st 9532',
+     'st 9540', '1.0', '2.0', '4.0', '5.0', '6.0', '7.0', '8.0', '9.0',
+     '10.0', '11.0', '12.0', '13.0', '14.0', '15.0', '16.0', '18.0', '19.0',
+     '20.0', '21.0', '28.0', '54.0', 'g 10', 'g 11', 'g 13', 'g 17', 'g 18',
+     'g 19', 'g 20', 'g 23', 'g 24', 'g 25', 'g 26', 'g 4', 'g 5', 'g 6',
+     'g 7', 'g 9', 'mk 2204', 'mk 2205', 'mk 2206', 'mk 2207', 'mk 2208',
+     'mk 2209']
+
+
+
+     # Rename columns for X_train
+    X_train.columns = new_names
+
+    # Rename columns for X_test
+    X_test.columns = new_names
+
+    # Rename columns for X_val
+    X_val.columns = new_names
 
 
     print("Break")
 #MLP model
+    """
     # Neurons per layer = 100
     tf.random.set_seed(42)
     np.random.seed(42)
+
+    # Define normalization layer
     norm_layer = tf.keras.layers.Normalization(input_shape=X_train.shape[1:])
+
     # Model architecture
     model = tf.keras.Sequential([
         norm_layer,
-        tf.keras.layers.Dense(100, activation='relu', input_shape=(X_train.shape[1],)),
+        tf.keras.layers.Dense(100, activation='relu'),
         tf.keras.layers.Dense(100, activation='relu'),
         tf.keras.layers.Dense(1, activation='sigmoid')
     ])
@@ -500,13 +161,19 @@ def run_program(main):
     # Defining the optimizer with a learning rate of 0.01
     optimizer = tf.keras.optimizers.SGD(learning_rate=0.01)
 
-    # Compiling the model with binary cross-entropy loss and Binary_Accuracy as the metric
-    model.compile(loss='binary_crossentropy', optimizer=optimizer,
-                  metrics=[tf.keras.metrics.BinaryAccuracy(), tf.keras.metrics.Precision(),
+    # Compiling the model with binary cross-entropy loss and metrics
+    model.compile(loss='binary_crossentropy',
+                  optimizer=optimizer,
+                  metrics=[tf.keras.metrics.BinaryAccuracy(),
+                           tf.keras.metrics.Precision(),
                            tf.keras.metrics.Recall()])
 
     # Train the model
-    history = model.fit(X_train, y_train, epochs=100, batch_size=36, validation_data=(X_val, y_val), verbose=2)
+    history = model.fit(X_train, y_train,
+                        epochs=100,
+                        batch_size=36,
+                        validation_data=(X_val, y_val),
+                        verbose=2)
 
     # Evaluate the model on the test set
     loss, binary_accuracy, precision, recall = model.evaluate(X_test, y_test)
@@ -519,90 +186,15 @@ def run_program(main):
     binary_preds = model.predict(X_test)
     # Round the predictions to get the binary class labels (0 or 1)
     binary_preds_rounded = [1 if pred > 0.5 else 0 for pred in binary_preds]
-    print("MLP Classifier")
-# Evaluation of MLP classifier
-
-    # Calculate Precision-Recall curve on test set
-    precision_test, recall_test, _ = precision_recall_curve(y_test, binary_preds_rounded)
-    # Plot Precision-Recall curve on test set
-    plt.subplot(1, 2, 2)
-    plt.plot(recall_test, precision_test, color='blue', lw=2,
-             label='Precision-Recall curve (area = %0.2f)' % auc(recall_test, precision_test))
-    plt.xlabel('Recall')
-    plt.ylabel('Precision')
-    plt.title('Precision-Recall Curve (Test Set)')
-    plt.legend(loc="lower left")
-
-    plt.tight_layout()
-    plt.show()
-    print("PR Curve")
-
-    # Setting precision -recall threshold
-
-    # Defining the optimizer with a learning rate of 0.01
-    optimizer = tf.keras.optimizers.SGD(learning_rate=0.01)
-
-    # Compiling the model with binary cross-entropy loss and Binary_Accuracy as the metric
-    model.compile(loss='binary_crossentropy', optimizer=optimizer,
-                  metrics=[tf.keras.metrics.BinaryAccuracy(), tf.keras.metrics.Precision(),
-                           tf.keras.metrics.Recall()])
-
-    # Train the model
-    history = model.fit(X_train, y_train, epochs=100, batch_size=36, validation_data=(X_val, y_val), verbose=2)
-
-    # Evaluate the model on the val set
-    loss, binary_accuracy, precision, recall = model.evaluate(X_val, y_val)
-    print("Binary Cross-Entropy Loss:", round(loss, 7))
-    print("Binary Accuracy on val set:", round(binary_accuracy, 7))
-    print("Precision on val set:", round(precision, 7))
-    print("Recall on val set:", round(recall, 7))
-
-    # Make predictions on the val set
-    binary_preds = model.predict(X_val)
-    # Round the predictions to get the binary class labels (0 or 1)
-    binary_preds_rounded = [1 if pred > 0.5 else 0 for pred in binary_preds]
 
     # Calculate F1-score for binary classification
-    f1 = f1_score(y_val, binary_preds_rounded)
+    f1 = f1_score(y_test, binary_preds_rounded)
     print("Confusion Matrix:")
-    print(confusion_matrix(y_val, binary_preds_rounded))
-    print("MLP model")
+    print(confusion_matrix(y_test, binary_preds_rounded))
+    print("F1-score: {:.5f}".format(f1))
+    print("F1-score: {:.5f}".format(f1))
+    """
 
-    # Train the model
-    history = model.fit(X_train, y_train, epochs=100, batch_size=36, validation_data=(X_val, y_val), verbose=2)
-
-    # Evaluate the model on the val set
-    loss, binary_accuracy, precision, recall = model.evaluate(X_val, y_val)
-    print("Binary Cross-Entropy Loss:", round(loss, 5))
-    print("Binary Accuracy on val set:", round(binary_accuracy, 5))
-    print("Precision on val set:", round(precision, 5))
-    print("Recall on val set:", round(recall, 5))
-
-    # Make predictions on the val set
-    binary_preds = model.predict(X_val)
-
-    # Find the optimal threshold for F1-score and recall trade-off
-    best_f1 = 0
-    best_threshold = 0.5  # Initial threshold
-    for threshold in np.arange(0.15, 0.85, 0.01):
-        binary_preds_rounded = [1 if pred > threshold else 0 for pred in binary_preds]
-        current_f1 = f1_score(y_val, binary_preds_rounded)
-        current_recall = recall_score(y_val, binary_preds_rounded)
-        if current_f1 > best_f1 and current_recall > 0.85:
-            best_f1 = current_f1
-            best_threshold = threshold
-
-    print("Best Threshold for F1-score and Recall Trade-off:", round(best_threshold, 2))
-    print("Best F1-score:", round(best_f1, 5))
-
-    # Apply the best threshold to predictions
-    binary_preds_rounded_best = [1 if pred > best_threshold else 0 for pred in binary_preds]
-
-    # Calculate Confusion Matrix and F1-score with the best threshold
-    print("Confusion Matrix:")
-    print(confusion_matrix(y_val, binary_preds_rounded_best))
-    print("F1-score with best threshold:", round(f1_score(y_val, binary_preds_rounded_best), 5))
-    print("Threshold applied at 85% recall atleast")
 # XG Boost
     # Best XG Boost
 
@@ -626,6 +218,32 @@ def run_program(main):
     print("Recall:", recall)
     print("F1 Score:", f1)
     print("XG Boost")
+
+    # Calculate Feature Importance Scores
+    feature_importance = xg.feature_importances_
+
+    # Sort and get the indices of the top 20 features
+    sorted_idx = np.argsort(feature_importance)[::-1][:20]
+
+    # Get the names of the top 20 features
+    top_feature_names = X_train.columns[sorted_idx]
+
+    # Get the corresponding feature importance scores for the top 20 features
+    top_feature_importance = feature_importance[sorted_idx]
+
+    # Plot the top 20 features
+    plt.figure(figsize=(10, 8))
+    plt.barh(range(len(top_feature_names)), top_feature_importance, align="center")
+    plt.yticks(range(len(top_feature_names)), top_feature_names)
+    plt.xlabel("Feature Importance Score")
+    plt.ylabel("Feature")
+    plt.title("Top 20 Features by Importance")
+    plt.gca().invert_yaxis()  # Invert y-axis to have the highest importance on top
+    plt.show()
+
+
+    print('Feature importance')
+
     # Calculate Precision-Recall curve on test set
     precision_test, recall_test, _ = precision_recall_curve(y_test, xg_y_pred)
     # Plot Precision-Recall curve on test set
@@ -640,9 +258,35 @@ def run_program(main):
     plt.tight_layout()
     plt.show()
     print("PR Curve")
+# Learning Curve
 
+    def plot_comp_in(xg, X_train, y_train):
+        train_sizes, train_scores, val_scores = learning_curve(xg, X_train, y_train, cv=5,
+                                                               train_sizes=np.linspace(0.1, 1.0, 5),
+                                                               scoring=make_scorer(f1_score),
+                                                               n_jobs=-1)
 
+        # Calculate the mean and standard deviation for training and validation scores
+        train_mean = np.mean(train_scores, axis=1)
+        train_std = np.std(train_scores, axis=1)
+        val_mean = np.mean(val_scores, axis=1)
+        val_std = np.std(val_scores, axis=1)
 
+        # Plot the curve to gauge dataset training requirement
+        plt.figure(figsize=(10, 6))
+        plt.plot(train_sizes, train_mean, label='Training F1 Score', color='blue')
+        plt.fill_between(train_sizes, train_mean - train_std, train_mean + train_std, alpha=0.1, color='blue')
+        plt.plot(train_sizes, val_mean, label='Validation F1 Score', color='orange')
+        plt.fill_between(train_sizes, val_mean - val_std, val_mean + val_std, alpha=0.1, color='orange')
+        plt.xlabel('Training Set Size')
+        plt.ylabel('F1 Score')
+        plt.title('Learning Curves')
+        plt.legend(loc='best')
+        plt.grid()
+        plt.show()
+
+    plot_comp_in(xg, X_train, y_train)
+    print("Comp requirements check")
 
 if __name__ == '__main__':
     run_program('PyCharm')
