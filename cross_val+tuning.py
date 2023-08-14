@@ -281,7 +281,7 @@ class a3:
         optimiser: sgd, Adam
         loss fn : binary cross entropy
         LR: 0.01, 
-        reqularisation- with/without L1, L2
+        reqularisation- with/without L2, drop-out
         data processing hyper-parameters [epochs: 50,100,200
                         batch size:    ]
         """
